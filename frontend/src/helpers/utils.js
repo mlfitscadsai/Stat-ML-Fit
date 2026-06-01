@@ -24,7 +24,8 @@ async function parseCsv(data) {
 export async function loadCsv(filename) {
     return new Promise(resolve => {
         // eslint-disable-next-line no-undef
-        const url = `${BASE_URL}${filename}.csv`;
+        const base = import.meta.env.BASE_URL || '/';
+        const url = `${base}${filename}.csv`;
 
         Papa.parse(url, {
             download: true,

@@ -1,7 +1,7 @@
 const CHUNK_RULES = [
     { chunk: 'assistant-gemma', match: ['@huggingface/transformers', '@kessler/gemma-agent', 'onnxruntime'] },
-    { chunk: 'ml-tensorflow', match: ['@tensorflow'] },
-    { chunk: 'data-danfo', match: ['danfojs'] },
+    // Keep danfojs + tensorflow in one chunk (splitting causes TDZ/circular init errors).
+    { chunk: 'ml-tensorflow', match: ['@tensorflow', 'danfojs', 'scikitjs'] },
     { chunk: 'viz-plotly', match: ['plotly.js'] },
     { chunk: 'viz-highcharts', match: ['highcharts'] },
     { chunk: 'vendor-vue', match: ['vue', 'pinia', 'buefy', 'bulma'] },
