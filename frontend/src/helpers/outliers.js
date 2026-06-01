@@ -1,3 +1,5 @@
+import { dfColumn } from '@/utils/danfo_frame';
+
 export function seededRandom(seed) {
     let state = seed >>> 0;
     return () => {
@@ -183,7 +185,7 @@ export function filterOutliersFromDataFrame(df, numericColumns, method, threshol
 
     for (const col of numericColumns) {
         if (!df.columns.includes(col)) continue;
-        const colValues = df[col].values;
+        const colValues = dfColumn(df, col).values;
         const flags = getOutlierFlags(colValues, method, threshold);
         for (let i = 0; i < rowCount; i++) {
             if (flags[i]) {

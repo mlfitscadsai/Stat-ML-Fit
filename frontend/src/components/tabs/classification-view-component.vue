@@ -185,6 +185,7 @@ import { getDanfo } from '@/utils/danfo_loader';
 import { openGemmaAssistant } from '@/services/gemma/assistant-events';
 import { buildMethodPrompt } from '@/services/gemma/help-context';
 import { apiUrl } from '@/services/api/client';
+import { submitHpcRun, uploadDatasetBlob } from '@/services/hpc/hpc-client';
 
 import axios from "axios";
 
@@ -261,55 +262,61 @@ export default {
         async upload() {
             let vm = this;
             const danfo = await getDanfo()
-            let formdata = new FormData();
             let dataframe = danfo.concat({ dfList: [this.result.snapshot.x, this.result.snapshot.xt], axis: 0 })
             let target = this.result.snapshot.y.concat(this.result.snapshot.yt)
             dataframe.addColumn(this.result.target, target, { inplace: true })
             let file = danfo.toCSV(dataframe, { filePath: "pca_data.csv" });
             const blob = new Blob([file], { type: "text/csv" });
-            formdata.append('file', blob, 'main.csv');
 
-            return axios.post(apiUrl('/upload'), formdata, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            }
-            ).then(function (res) {
-                vm.fileName = res.data
-                console.log('SUCCESS!!', vm.fileName);
-                axios.get(apiUrl(`/run?file_name=${encodeURIComponent(vm.fileName)}&job_id=${encodeURIComponent(vm.result.useHPC)}&target=${encodeURIComponent(vm.result.target)}&seed=${encodeURIComponent(vm.result.seed)}`)).then(() => {
-                    vm.intervalId = setInterval(() => {
-                        axios.get(apiUrl(`/progress?job_id=${encodeURIComponent(vm.result.useHPC)}`))
-                            .then((res) => {
-                                vm.jobProgressTries += 1;
-                                if (res.data?.status === 'running') {
-                                    return;
-                                }
-                                const jobResult = res.data?.result || res.data;
-                                if (jobResult && res.data?.status !== 'failed') {
-                                    vm.hide = false;
-                                    vm.result.model.predictions = jobResult.predictions;
-                                    vm.result.model.pdp_averages = jobResult.pdp_avgs;
-                                    vm.result.model.pdp_grid = jobResult.pdp_grid;
-                                    vm.result.model.importances = jobResult.pfi;
-                                    vm.result.model.fpr = jobResult.fprs;
-                                    vm.result.model.tpr = jobResult.tprs;
-                                    vm.result.model.auc = jobResult.auc;
-                                    vm.result.model.probas = jobResult.probas;
-                                    vm.result.model.visualize(vm.result.snapshot.xt, vm.result.snapshot.yt, vm.result.snapshot.labels,
-                                        jobResult.predictions, vm.result.encoder, vm.result.snapshot.x.columns, vm.result.snapshot.categoricals)
-                                    clearInterval(vm.intervalId);
-                                } else if (vm.jobProgressTries > 100) {
-                                    clearInterval(vm.intervalId);
-                                }
-                            });
-                    }, 3 * 1000)
-                }).catch(function (err) {
-                    console.log('FAILURE!!', err.data);
+            try {
+                vm.fileName = await uploadDatasetBlob(blob, 'main.csv');
+                await submitHpcRun({
+                    fileName: vm.fileName,
+                    jobId: vm.result.useHPC,
+                    target: vm.result.target,
+                    seed: vm.result.seed,
+                    methodName: vm.result.name || '',
+                    explain: vm.result.hasExplaination !== false,
                 });
-            }).catch(function () {
-                console.log('FAILURE!!');
-            });
+                vm.intervalId = setInterval(() => {
+                    axios.get(apiUrl(`/progress?job_id=${encodeURIComponent(vm.result.useHPC)}`))
+                        .then((res) => {
+                            vm.jobProgressTries += 1;
+                            if (res.data?.status === 'running') {
+                                return;
+                            }
+                            const jobResult = res.data?.result || res.data;
+                            if (jobResult && res.data?.status !== 'failed') {
+                                vm.hide = false;
+                                vm.result.model.predictions = jobResult.predictions;
+                                vm.result.model.pdp_averages = jobResult.pdp_avgs;
+                                vm.result.model.pdp_grid = jobResult.pdp_grid;
+                                vm.result.model.importances = jobResult.pfi;
+                                vm.result.model.fpr = jobResult.fprs;
+                                vm.result.model.tpr = jobResult.tprs;
+                                vm.result.model.auc = jobResult.auc;
+                                vm.result.model.probas = jobResult.probas;
+                                vm.result.model.visualize(
+                                    vm.result.snapshot.xt,
+                                    vm.result.snapshot.yt,
+                                    vm.result.snapshot.labels,
+                                    jobResult.predictions,
+                                    vm.result.encoder,
+                                    vm.result.snapshot.x.columns,
+                                    vm.result.snapshot.categoricals
+                                );
+                                clearInterval(vm.intervalId);
+                            } else if (vm.jobProgressTries > 100) {
+                                clearInterval(vm.intervalId);
+                                vm.hide = false;
+                            }
+                        })
+                        .catch((err) => console.warn('HPC job polling failed', err));
+                }, 3 * 1000);
+            } catch (err) {
+                console.warn('HPC upload/run failed', err);
+                vm.hide = false;
+            }
         },
         toggleHelp(id) {
             openGemmaAssistant({

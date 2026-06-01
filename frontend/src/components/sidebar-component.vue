@@ -123,19 +123,33 @@
                                 </option>
                             </b-select>
                         </b-field>
+                        <b-field v-if="useOutliers && outlierMethod === 'zscore'" class="sidebar-field" label="Z threshold">
+                            <b-input size="is-small" v-model="outlierZThreshold" type="number" min="1" step="0.1"></b-input>
+                        </b-field>
                         <b-field>
                             <b-checkbox v-model="useHPC" size="is-small">Use HPC resources</b-checkbox>
                         </b-field>
+                        <p v-if="useHPC && hpcConfigured === false" class="sidebar-hpc-hint sidebar-hpc-hint--warn">
+                            HPC is not configured on the server (set HPC_HOST, HPC_USER, HPC_PASSWORD in .env).
+                        </p>
+                        <p v-else-if="useHPC && hpcUploadedFile" class="sidebar-hpc-hint">
+                            Dataset on HPC: {{ hpcUploadedFile }}
+                        </p>
                     </div>
                 </details>
 
                 <div class="train-actions">
                     <b-button @click="train" size="is-small" icon-pack="fas" icon-left="play"
                         class="control-action-btn control-action-btn-train" type="is-success" :loading="training"
-                        :disabled="!settings.getDataset || modelOption == null">
+                        :disabled="!hasDataset || modelOption == null">
                         Train</b-button>
-                    <b-button :disabled="!useHPC" class="control-action-btn control-action-btn-upload" size="is-small"
-                        @click="upload()">Upload to HPC</b-button>
+                    <b-button
+                        :disabled="!canUploadToHpc"
+                        :title="uploadToHpcTitle"
+                        class="control-action-btn control-action-btn-upload"
+                        size="is-small"
+                        :loading="hpcUploading"
+                        @click="uploadToHpc()">Upload to HPC</b-button>
                 </div>
                 <b-loading :is-full-page="false" v-model="training"></b-loading>
             </div>
@@ -153,9 +167,16 @@ import PCA from '@/helpers/dimensionality-reduction/pca';
 import { ModelFactory } from "@/helpers/model_factory";
 import { settingStore } from '@/stores/settings'
 import { applyDataTransformation, handle_missing_values, encode_dataset } from '@/helpers/utils';
+import { filterOutliersFromDataFrame } from '@/helpers/outliers';
 import { TASK_MODES, detectTaskFromTarget, resolveTaskMode, validateModeCompatibility } from '@/helpers/task_mode';
 import { getDanfo } from '@/utils/danfo_loader';
 import { dfColumn } from '@/utils/danfo_frame';
+import {
+    buildCsvBlobFromDataframe,
+    buildCsvBlobFromRawRows,
+    fetchHpcHealth,
+    uploadDatasetBlob,
+} from '@/services/hpc/hpc-client';
 import { BButton, BSelect, BField, BInput, BCheckbox, useToast } from 'buefy'
 
 import axios from "axios";
@@ -180,9 +201,21 @@ export default {
             explainModel: true,
             training: false,
             tuneModel: false,
-            numberOfComponents: 0,
+            numberOfComponents: 2,
             usePCAs: false,
+            useOutliers: false,
+            outlierMethod: 'iqr',
+            outlierZThreshold: 3,
+            outlierMethods: [
+                { id: 'iqr', label: 'IQR (Tukey)' },
+                { id: 'zscore', label: 'Z-score' },
+                { id: 'mad', label: 'Modified Z (MAD)' },
+                { id: 'isolation', label: 'Isolation Forest' },
+            ],
             useHPC: false,
+            hpcConfigured: null,
+            hpcUploadedFile: null,
+            hpcUploading: false,
             seed: 123,
             dataframe: null,
             configureFeatures: false,
@@ -240,26 +273,86 @@ export default {
             file: null
         }
     },
+    computed: {
+        hasDataset() {
+            return Array.isArray(this.settings.rawData) && this.settings.rawData.length > 0;
+        },
+        canUploadToHpc() {
+            return this.useHPC && this.hasDataset && this.hpcConfigured !== false && !this.hpcUploading;
+        },
+        uploadToHpcTitle() {
+            if (!this.useHPC) return 'Enable “Use HPC resources” first';
+            if (!this.hasDataset) return 'Load a dataset before uploading';
+            if (this.hpcConfigured === false) return 'HPC is not configured on the API server';
+            return 'Upload the current dataset CSV to the HPC staging area';
+        },
+    },
+    watch: {
+        usePCAs(enabled) {
+            if (enabled && (!Number(this.numberOfComponents) || Number(this.numberOfComponents) < 1)) {
+                this.numberOfComponents = 2;
+            }
+        },
+    },
     methods: {
         setFile(e) {
             this.file = e
         },
-        upload() {
-            let formdata = new FormData();
-            this.settings.rawData
-            formdata.append('file', this.file);
-            console.log(this.file);
-
-            axios.post('http://127.0.0.1:5000/upload', formdata, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+        async refreshHpcStatus() {
+            try {
+                const health = await fetchHpcHealth();
+                this.hpcConfigured = health?.hpc_configured === true;
+            } catch {
+                this.hpcConfigured = false;
             }
-            ).then(function () {
-                console.log('SUCCESS!!');
-            }).catch(function () {
-                console.log('FAILURE!!');
-            });
+        },
+        resolvePcaComponents(featureCount) {
+            const n = Number(this.numberOfComponents);
+            if (Number.isFinite(n) && n > 0) {
+                return Math.min(Math.floor(n), featureCount);
+            }
+            return Math.min(2, featureCount);
+        },
+        async buildDatasetUploadBlob() {
+            if (this.file) {
+                return this.file;
+            }
+            const danfo = await getDanfo();
+            if (this.dataframe?.columns?.length) {
+                return buildCsvBlobFromDataframe(danfo, this.dataframe);
+            }
+            return buildCsvBlobFromRawRows(this.settings.rawData);
+        },
+        async uploadToHpc() {
+            if (!this.canUploadToHpc) {
+                this.Toast.open({
+                    duration: 4000,
+                    message: this.uploadToHpcTitle,
+                    type: 'is-warning',
+                });
+                return;
+            }
+            this.hpcUploading = true;
+            try {
+                const blob = await this.buildDatasetUploadBlob();
+                if (!blob) {
+                    throw new Error('No dataset available to upload.');
+                }
+                const fileName = await uploadDatasetBlob(blob, 'main.csv');
+                this.hpcUploadedFile = fileName;
+                this.Toast.open({
+                    duration: 4000,
+                    message: `Dataset uploaded to HPC as ${fileName}`,
+                    type: 'is-success',
+                });
+                this.settings.addMessage({ message: `HPC upload: ${fileName}`, type: 'info' });
+            } catch (err) {
+                const message = err?.response?.data?.error || err?.message || 'HPC upload failed';
+                this.Toast.open({ duration: 5000, message, type: 'is-danger' });
+                this.settings.addMessage({ message, type: 'warning' });
+            } finally {
+                this.hpcUploading = false;
+            }
         },
         onTaskModeChange() {
             this.settings.setTaskMode(this.taskMode)
@@ -466,6 +559,17 @@ export default {
                     })
                     return
                 }
+                if (this.useHPC) {
+                    await this.refreshHpcStatus();
+                    if (!this.hpcConfigured) {
+                        this.Toast.open({
+                            duration: 5000,
+                            message: 'HPC is not configured on the server. Disable “Use HPC resources” for local training, or set HPC_* in .env and restart the API.',
+                            type: 'is-warning',
+                        });
+                        return;
+                    }
+                }
                 let seed = +this.seed;
                 this.settings.setSeed(seed)
                 const danfo = await getDanfo();
@@ -500,6 +604,23 @@ export default {
                 // Filter to selected columns first, THEN handle missing values
                 let filterd_dataset = dataset.loc({ columns: selected_columns })
                 numericColumns = numericColumns.filter(c => selected_columns.includes(c));
+                if (this.useOutliers && numericColumns.length > 0) {
+                    const threshold = this.outlierMethod === 'zscore' ? Number(this.outlierZThreshold) || 3 : undefined;
+                    const before = filterd_dataset.shape[0];
+                    filterd_dataset = filterOutliersFromDataFrame(
+                        filterd_dataset,
+                        numericColumns,
+                        this.outlierMethod,
+                        threshold
+                    );
+                    const removed = before - filterd_dataset.shape[0];
+                    if (removed > 0) {
+                        this.settings.addMessage({
+                            message: `Removed ${removed} row(s) as outliers (${this.outlierMethod}).`,
+                            type: 'info',
+                        });
+                    }
+                }
                 filterd_dataset = handle_missing_values(filterd_dataset)
                 filterd_dataset = applyDataTransformation(filterd_dataset, numericColumns, this.settings.transformationsList);
                 if (this.dataScalingBehavior) {
@@ -556,8 +677,9 @@ export default {
                 if (this.usePCAs) {
                     const pca = new PCA();
                     let numericColumns = this.settings.items.filter(column => column.selected && column.type === 1 && column.name != this.modelTarget).map(column => column.name);
+                    const pcaComponents = this.resolvePcaComponents(numericColumns.length);
                     let [pca_train, _, __, ___, ____, pca_test] = await pca.predict(x_train.loc({ columns: numericColumns }).values,
-                        this.numberOfComponents, x_test.loc({ columns: numericColumns }).values)
+                        pcaComponents, x_test.loc({ columns: numericColumns }).values, seed)
                     pca_train = pca_train.map(m => [].slice.call(m))
                     pca_test = pca_test.map(m => [].slice.call(m))
                     let cols = pca_train[0].map((_, i) => 'PC_' + (i + 1))
@@ -639,6 +761,9 @@ export default {
                 this.training = false;
             })
         }
+    },
+    mounted() {
+        this.refreshHpcStatus();
     },
     created: function () {
         this.Toast = useToast()
@@ -753,10 +878,31 @@ export default {
     color: #24463d;
 }
 
+.control-action-btn-upload:not([disabled]) {
+    background: rgba(55, 168, 255, 0.18) !important;
+    border-color: rgba(55, 168, 255, 0.5) !important;
+    color: #f7fbff !important;
+}
+
 .control-action-btn-upload[disabled] {
-    background-color: #e2e9e6;
-    border-color: #c7d6d1;
-    color: #69837b;
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(148, 163, 184, 0.15) !important;
+    color: #8fa2bd !important;
+}
+
+.sidebar-details--advanced .b-checkbox.checkbox span {
+    color: #f7fbff !important;
+}
+
+.sidebar-hpc-hint {
+    font-size: 0.72rem;
+    line-height: 1.35;
+    margin: 0.25rem 0 0;
+    color: #8fa2bd;
+}
+
+.sidebar-hpc-hint--warn {
+    color: #fbbf24;
 }
 
 .model-config-btn {

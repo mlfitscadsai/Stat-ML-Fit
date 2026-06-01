@@ -1267,8 +1267,27 @@ html:not(.dark) .dashboard-sidebar.control-panel .upload-option-row__label {
   border: 1px solid rgba(148, 163, 184, 0.2) !important;
   color: var(--sidebar-ink) !important;
 }
+.control-action-btn-upload:not([disabled]) {
+  background: rgba(55, 168, 255, 0.18) !important;
+  border-color: rgba(55, 168, 255, 0.45) !important;
+  color: var(--sidebar-ink) !important;
+}
 .control-action-btn-upload:disabled {
   color: var(--sidebar-muted) !important;
+  opacity: 0.65;
+}
+aside.control-panel .sidebar-details--advanced .b-checkbox.checkbox span,
+aside.control-panel .sidebar-details--advanced .checkbox {
+  color: var(--sidebar-ink) !important;
+}
+.sidebar-hpc-hint {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  margin: 0.2rem 0 0;
+  color: var(--sidebar-muted) !important;
+}
+.sidebar-hpc-hint--warn {
+  color: #fbbf24 !important;
 }
 
 /* ── RESPONSIVE & MOBILE STYLES ── */
