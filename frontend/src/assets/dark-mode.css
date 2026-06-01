@@ -1,0 +1,699 @@
+/* Dark mode CSS variables and overrides */
+:root {
+  color-scheme: light;
+  --theme-bg: #ffffff;
+  --theme-surface: #ffffff;
+  --theme-surface-2: #f6fbf9;
+  --theme-border: #d5e8e1;
+  --theme-text: #0f2a24;
+  --theme-text-muted: #4f6d64;
+  --theme-accent: #0e8d73;
+  --theme-input-bg: #ffffff;
+  --theme-shadow: 0 14px 30px rgba(16, 64, 50, 0.12);
+  --theme-transition-duration: 280ms;
+  --theme-transition-duration-ms: 280;
+  --theme-transition-ease: cubic-bezier(0.2, 0, 0, 1);
+  --theme-transition:
+    background-color var(--theme-transition-duration) var(--theme-transition-ease),
+    color var(--theme-transition-duration) var(--theme-transition-ease),
+    border-color var(--theme-transition-duration) var(--theme-transition-ease),
+    box-shadow var(--theme-transition-duration) var(--theme-transition-ease),
+    fill var(--theme-transition-duration) var(--theme-transition-ease),
+    stroke var(--theme-transition-duration) var(--theme-transition-ease),
+    outline-color var(--theme-transition-duration) var(--theme-transition-ease),
+    text-decoration-color var(--theme-transition-duration) var(--theme-transition-ease);
+
+  --dm-bg: #090d16;
+  --dm-surface: #111b2d;
+  --dm-surface-2: #1e293b;
+  --dm-border: #28374e;
+  --dm-text: #f8fafc;
+  --dm-text-muted: #94a3b8;
+  --dm-info: #38bdf8;
+  --dm-info-header: #1e293b;
+  --dm-info-border: #28374e;
+  --dm-input-bg: #152238;
+  --dm-input-border: #28374e;
+  --dm-table-head: #1e293b;
+  --dm-table-row-even: #111b2d;
+  --dm-table-row-odd: #152238;
+  --dm-tab-active: #38bdf8;
+  --dm-tab-inactive: #94a3b8;
+  --dm-btn-bg: #152238;
+  --dm-btn-border: #28374e;
+  --dm-btn-text: #f8fafc;
+  --dm-scrollbar: #28374e;
+}
+
+html.dark {
+  color-scheme: dark;
+  --theme-bg: var(--dm-bg);
+  --theme-surface: var(--dm-surface);
+  --theme-surface-2: var(--dm-surface-2);
+  --theme-border: var(--dm-border);
+  --theme-text: var(--dm-text);
+  --theme-text-muted: var(--dm-text-muted);
+  --theme-accent: #0ea5e9;
+  --theme-input-bg: var(--dm-input-bg);
+  --theme-shadow: 0 14px 30px rgba(14, 165, 233, 0.15);
+}
+
+html,
+body {
+  min-height: 100%;
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: var(--theme-transition) !important;
+    transition-timing-function: var(--theme-transition-ease) !important;
+    transition-duration: var(--theme-transition-duration) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: none !important;
+  }
+}
+
+body,
+#app {
+  min-height: 100vh;
+}
+
+/* ══════════════════════════════════════════════════════════
+   LIGHT MODE — force pure white on every surface
+   (applies only when html.dark is NOT present)
+   ══════════════════════════════════════════════════════════ */
+
+html:not(.dark) body,
+html:not(.dark) .container {
+  background-color: #ffffff;
+  color: #1f2937;
+}
+
+html:not(.dark) #app,
+html:not(.dark) .columns,
+html:not(.dark) .column,
+html:not(.dark) .section,
+html:not(.dark) .content {
+  background-color: #ffffff;
+  color: #1f2937;
+}
+
+html:not(.dark) .title,
+html:not(.dark) .subtitle,
+html:not(.dark) h1,
+html:not(.dark) h2,
+html:not(.dark) h3,
+html:not(.dark) h4,
+html:not(.dark) h5,
+html:not(.dark) h6 {
+  color: #111827 !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+html:not(.dark) p,
+html:not(.dark) li,
+html:not(.dark) span,
+html:not(.dark) strong,
+html:not(.dark) em,
+html:not(.dark) label,
+html:not(.dark) .label,
+html:not(.dark) .help {
+  color: #1f2937 !important;
+  opacity: 1 !important;
+}
+
+html:not(.dark) .tabs a {
+  color: #111827 !important;
+  opacity: 1 !important;
+  font-weight: 600;
+}
+
+html:not(.dark) .tabs li.is-active a {
+  color: #111827 !important;
+  border-bottom-color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+html:not(.dark) .b-field .label,
+html:not(.dark) .field > .label {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+html:not(.dark) .content .table th,
+html:not(.dark) .content .table td,
+html:not(.dark) .content .table th *,
+html:not(.dark) .content .table td * {
+  color: #1f2937 !important;
+  opacity: 1 !important;
+}
+
+html:not(.dark) .content .table tbody tr {
+  opacity: 1 !important;
+}
+
+html:not(.dark) .content .MathJax,
+html:not(.dark) .content .mjx-container,
+html:not(.dark) .content .mjx-container *,
+html:not(.dark) .content .MathJax_SVG,
+html:not(.dark) .content .MathJax_SVG * {
+  color: #1f2937 !important;
+  fill: #1f2937 !important;
+  stroke: #1f2937 !important;
+  opacity: 1 !important;
+}
+
+html:not(.dark) .docs-content .MathJax,
+html:not(.dark) .docs-content .MathJax *,
+html:not(.dark) .docs-content .MathJax_Display,
+html:not(.dark) .docs-content .MathJax_Display *,
+html:not(.dark) .docs-content .MathJax_SVG,
+html:not(.dark) .docs-content .MathJax_SVG *,
+html:not(.dark) .docs-content .MathJax_SVG_Display,
+html:not(.dark) .docs-content .MathJax_SVG_Display *,
+html:not(.dark) .docs-content .mjx-container,
+html:not(.dark) .docs-content .mjx-container *,
+html:not(.dark) .docs-content .mjx-container svg,
+html:not(.dark) .docs-content .mjx-container svg * {
+  color: #111827 !important;
+  fill: #111827 !important;
+  stroke: #111827 !important;
+  opacity: 1 !important;
+}
+
+html:not(.dark) .docs-content .table,
+html:not(.dark) .docs-content .table td {
+  background-color: #ffffff !important;
+}
+
+/* Sidebar grey strip → white */
+html:not(.dark) .has-background-light {
+  background-color: #ffffff !important;
+}
+
+/* Message boxes — all variants */
+html:not(.dark) .message-body,
+html:not(.dark) .message.is-info .message-body,
+html:not(.dark) .message.is-warning .message-body,
+html:not(.dark) .message.is-danger .message-body,
+html:not(.dark) .message.is-success .message-body,
+html:not(.dark) .message.is-dark .message-body {
+  background-color: #ffffff;
+}
+
+html:not(.dark) .message {
+  background-color: #ffffff;
+}
+
+/* Tables */
+html:not(.dark) .table,
+html:not(.dark) .table-container {
+  background-color: #ffffff;
+}
+
+/* Notifications (non-coloured ones) */
+html:not(.dark) .notification:not(.is-info):not(.is-warning):not(.is-danger):not(.is-success) {
+  background-color: #ffffff;
+}
+
+/* Panel / Box / Card */
+html:not(.dark) .box,
+html:not(.dark) .card,
+html:not(.dark) .panel {
+  background-color: #ffffff;
+}
+
+/* Modal */
+html:not(.dark) .modal-card-body {
+  background-color: #ffffff;
+}
+
+/* Tabs content area */
+html:not(.dark) .tab-content {
+  background-color: #ffffff;
+}
+
+/* ── Base ─────────────────────────────────────────────── */
+html.dark body {
+  background-color: var(--dm-bg) !important;
+  color: var(--dm-text) !important;
+}
+
+html.dark #app,
+html.dark .container,
+html.dark .columns,
+html.dark .column,
+html.dark .content,
+html.dark .tab-content {
+  background-color: var(--dm-bg) !important;
+}
+
+/* ── Typography ───────────────────────────────────────── */
+html.dark .title,
+html.dark .subtitle {
+  color: var(--dm-text) !important;
+}
+
+html.dark .content,
+html.dark .content p,
+html.dark .content li,
+html.dark .content strong,
+html.dark .content em,
+html.dark .content figcaption,
+html.dark .content h1,
+html.dark .content h2,
+html.dark .content h3,
+html.dark .content h4,
+html.dark .content h5,
+html.dark .content h6 {
+  color: var(--dm-text) !important;
+}
+
+html.dark a,
+html.dark .content a {
+  color: #0284c7;
+  text-decoration: underline;
+}
+
+html.dark a:hover,
+html.dark .content a:hover {
+  color: #0369a1;
+}
+
+/* ── Bulma Message (info boxes) ───────────────────────── */
+html.dark .message {
+  background-color: var(--dm-surface) !important;
+  border-color: var(--dm-border);
+}
+
+html.dark .message.is-info {
+  background-color: var(--dm-surface) !important;
+}
+
+html.dark .message.is-info .message-header {
+  background-color: var(--dm-info-header);
+  color: #e0e9ff;
+}
+
+html.dark .message.is-info .message-body {
+  background-color: var(--dm-surface) !important;
+  color: var(--dm-text) !important;
+  border-color: var(--dm-info-border);
+}
+
+html.dark .message.is-danger .message-header {
+  background-color: #450a0a !important;
+  color: #fecaca !important;
+}
+
+html.dark .message.is-danger .message-body {
+  background-color: #450a0a !important;
+  color: #fecaca !important;
+  border-color: #991b1b !important;
+}
+
+html.dark .message.is-warning .message-header {
+  background-color: #422006 !important;
+  color: #fef3c7 !important;
+}
+
+html.dark .message.is-warning .message-body {
+  background-color: #422006 !important;
+  color: #fef3c7 !important;
+  border-color: #92400e !important;
+}
+
+/* ── Bulma Notification ───────────────────────────────── */
+html.dark .notification:not(.is-info):not(.is-warning):not(.is-danger):not(.is-success) {
+  background-color: var(--dm-surface-2);
+  color: var(--dm-text) !important;
+}
+
+html.dark .notification.is-info {
+  background-color: var(--dm-info);
+  color: #fff !important;
+}
+
+html.dark .notification.is-warning,
+html.dark .notification.is-warning.is-light {
+  background-color: #422006 !important;
+  border-color: #92400e !important;
+  color: #fef3c7 !important;
+}
+
+html.dark .notification.is-danger,
+html.dark .notification.is-danger.is-light {
+  background-color: #450a0a !important;
+  border-color: #991b1b !important;
+  color: #fecaca !important;
+}
+
+html.dark .notification.is-success,
+html.dark .notification.is-success.is-light {
+  background-color: #052e16 !important;
+  border-color: #166534 !important;
+  color: #bbf7d0 !important;
+}
+
+/* ── Bulma Table ──────────────────────────────────────── */
+html.dark .table {
+  background-color: var(--dm-surface) !important;
+  color: var(--dm-text) !important;
+  border-color: var(--dm-border);
+}
+
+html.dark .table th {
+  background-color: var(--dm-table-head);
+  color: var(--dm-text) !important;
+  border-color: var(--dm-border);
+}
+
+html.dark .table td {
+  border-color: var(--dm-border);
+  color: var(--dm-text) !important;
+}
+
+html.dark .table.is-striped tbody tr:not(.is-selected):nth-child(even) {
+  background-color: var(--dm-table-row-even);
+}
+
+html.dark .table.is-striped tbody tr:not(.is-selected):nth-child(odd) {
+  background-color: var(--dm-table-row-odd);
+}
+
+html.dark .table.is-hoverable tbody tr:not(.is-selected):hover {
+  background-color: var(--dm-surface-2);
+}
+
+html.dark .table-container {
+  background-color: var(--dm-surface) !important;
+}
+
+/* ── Bulma/Buefy Tabs ─────────────────────────────────── */
+html.dark .tabs {
+  border-bottom-color: var(--dm-border);
+}
+
+html.dark .tabs ul {
+  border-bottom-color: var(--dm-border);
+}
+
+html.dark .tabs a {
+  color: var(--dm-tab-inactive);
+  border-bottom-color: var(--dm-border);
+}
+
+html.dark .tabs a:hover {
+  border-bottom-color: var(--dm-tab-active);
+  color: var(--dm-tab-active);
+}
+
+html.dark .tabs li.is-active a {
+  border-bottom-color: var(--dm-tab-active) !important;
+  color: var(--dm-tab-active) !important;
+}
+
+/* ── Bulma/Buefy Form Inputs ──────────────────────────── */
+html.dark .input,
+html.dark .textarea,
+html.dark .select select {
+  background-color: var(--dm-input-bg) !important;
+  border-color: var(--dm-input-border);
+  color: var(--dm-text) !important;
+}
+
+html.dark .input:hover,
+html.dark .textarea:hover,
+html.dark .select select:hover {
+  border-color: #6a6a8a;
+}
+
+html.dark .input:focus,
+html.dark .textarea:focus,
+html.dark .select select:focus {
+  border-color: #7c8fdc;
+  box-shadow: 0 0 0 0.125em rgba(124, 143, 220, 0.25);
+}
+
+html.dark .input::placeholder,
+html.dark .textarea::placeholder {
+  color: var(--dm-text-muted);
+}
+
+html.dark .select::after {
+  border-color: var(--dm-text-muted);
+}
+
+html.dark .select:not(.is-multiple):not(.is-loading)::after {
+  border-color: var(--dm-text-muted);
+}
+
+html.dark .label {
+  color: var(--dm-text) !important;
+}
+
+html.dark .field.has-addons .control:first-child .input,
+html.dark .field.has-addons .control:first-child .select select {
+  border-right-color: var(--dm-border);
+}
+
+/* ── Bulma/Buefy Buttons ──────────────────────────────── */
+html.dark .button:not(.is-info):not(.is-success):not(.is-danger):not(.is-warning):not(.is-dark):not(.is-primary) {
+  background-color: var(--dm-btn-bg);
+  border-color: var(--dm-btn-border);
+  color: var(--dm-btn-text);
+}
+
+html.dark .button:not(.is-info):not(.is-success):not(.is-danger):not(.is-warning):not(.is-dark):not(.is-primary):hover {
+  background-color: var(--dm-surface-2);
+  border-color: #6a6a8a;
+  color: var(--dm-text) !important;
+}
+
+/* ── Buefy Checkbox ───────────────────────────────────── */
+html.dark .b-checkbox.checkbox .check {
+  background-color: var(--dm-input-bg) !important;
+  border-color: var(--dm-input-border);
+}
+
+/* ── Bulma has-background-light ───────────────────────── */
+html.dark .has-background-light {
+  background-color: var(--dm-surface-2) !important;
+}
+
+/* ── Bulma Section/Box/Card ───────────────────────────── */
+html.dark .section {
+  background-color: var(--dm-bg) !important;
+}
+
+html.dark .box {
+  background-color: var(--dm-surface) !important;
+  color: var(--dm-text) !important;
+  border: 1px solid var(--dm-border);
+}
+
+html.dark .card {
+  background-color: var(--dm-surface) !important;
+  color: var(--dm-text) !important;
+}
+
+html.dark .card-header {
+  background-color: var(--dm-surface-2);
+}
+
+html.dark .panel {
+  background-color: var(--dm-surface) !important;
+}
+
+/* ── Buefy Dropdown/Menu ──────────────────────────────── */
+html.dark .dropdown-menu {
+  background-color: var(--dm-surface) !important;
+  border-color: var(--dm-border);
+}
+
+html.dark .dropdown-item,
+html.dark .dropdown .dropdown-menu .has-link a {
+  color: var(--dm-text) !important;
+}
+
+html.dark .dropdown-item:hover,
+html.dark .dropdown .dropdown-menu .has-link a:hover {
+  background-color: var(--dm-surface-2);
+  color: var(--dm-text) !important;
+}
+
+/* ── Buefy Modal ─────────────────────────────────────── */
+html.dark .modal-card-head,
+html.dark .modal-card-foot {
+  background-color: var(--dm-surface-2);
+  border-color: var(--dm-border);
+}
+
+html.dark .modal-card-body {
+  background-color: var(--dm-surface) !important;
+  color: var(--dm-text) !important;
+}
+
+html.dark .modal-card-title {
+  color: var(--dm-text) !important;
+}
+
+/* ── Buefy Tooltip ───────────────────────────────────── */
+html.dark .tooltip-content {
+  background-color: var(--dm-surface-2);
+  color: var(--dm-text) !important;
+  border-color: var(--dm-border);
+}
+
+/* ── Floating on-border labels ───────────────────────── */
+/* Buefy puts a white background on the label so it sits  */
+/* on top of the field border. In dark mode this creates   */
+/* a white box. Override to match the dark input surface. */
+html.dark .b-field .label,
+html.dark .field > .label {
+  background-color: var(--dm-input-bg) !important;
+  color: var(--dm-text) !important;
+}
+
+/* ── is-dark buttons inside message headers ──────────── */
+/* In dark mode the message-header is already dark navy.  */
+/* type="is-dark" buttons become invisible. Make them use */
+/* a light outline style instead.                         */
+html.dark .message-header .button.is-dark {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+
+html.dark .message-header .button.is-dark:hover {
+  background-color: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+/* ── has-text-danger table rows in dark mode ─────────── */
+html.dark tr.has-text-danger td {
+  color: #ff9090 !important;
+}
+
+/* ── Scrollbar (webkit) ───────────────────────────────── */
+html.dark ::-webkit-scrollbar {
+  background-color: var(--dm-bg) !important;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--dm-scrollbar);
+  border-radius: 4px;
+}
+
+/* ── Dark mode toggle button ─────────────────────────── */
+.dark-mode-toggle {
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid #bbb;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: background 0.2s, border-color 0.2s;
+  line-height: 1;
+  padding: 0;
+}
+
+.dark-mode-toggle:hover {
+  background: rgba(128, 128, 128, 0.15);
+}
+
+html.dark .dark-mode-toggle {
+  border-color: var(--dm-border);
+  color: var(--dm-text) !important;
+}
+
+/* ── Plotly / Highcharts text inherits themed layouts from chart-theme.js ── */
+html.dark .js-plotly-plot .xtick text,
+html.dark .js-plotly-plot .ytick text,
+html.dark .js-plotly-plot .legendtext,
+html.dark .highcharts-axis-labels text,
+html.dark .highcharts-title,
+html.dark .highcharts-legend-item text {
+  fill: var(--theme-text-muted) !important;
+  color: var(--theme-text-muted) !important;
+}
+
+/* Fix dropdown options readability */
+html.dark option {
+  background-color: var(--dm-surface-2) !important;
+  color: var(--dm-text) !important;
+}
+
+/* Fix b-checkbox text readability */
+html.dark .checkbox,
+html.dark .radio,
+html.dark .b-checkbox.checkbox,
+html.dark .checkbox:hover,
+html.dark .b-checkbox.checkbox span {
+  color: var(--dm-text) !important;
+}
+
+/* Fix table text colors */
+html.dark .table * {
+  color: var(--dm-text) !important;
+}
+html.dark .table {
+  background-color: var(--dm-surface) !important;
+}
+html.dark .table th {
+  background-color: var(--dm-table-head) !important;
+}
+
+/* ── DataTables ───────────────────────────────────────── */
+html.dark .dataTables_wrapper,
+html.dark .dataTables_filter input,
+html.dark .dataTables_length select,
+html.dark table.dataTable {
+  background-color: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .dataTables_wrapper .dataTables_paginate .paginate_button {
+  color: var(--theme-text) !important;
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+}
+
+/* ── Buefy modals, dropdowns, menus ───────────────────── */
+html.dark .modal-card,
+html.dark .modal-card-head,
+html.dark .modal-card-body,
+html.dark .modal-card-foot,
+html.dark .dropdown-content,
+html.dark .dropdown-item,
+html.dark .menu-list a,
+html.dark .snackbar {
+  background-color: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .dropdown-item:hover,
+html.dark .menu-list a:hover {
+  background-color: var(--theme-surface-2) !important;
+}

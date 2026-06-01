@@ -1,0 +1,11 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5001:5000"
+    environment:
+      FLASK_ENV: development
+      # Optional: set these for HPC features (/run, /progress)
+      # HPC_HOST: ""
+      # HPC_USER: ""
+      # HPC_PASSWORD: ""

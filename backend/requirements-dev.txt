@@ -1,0 +1,3 @@
+# Dev/test dependencies (not required on production VM)
+pytest>=8.0
+pytest-mock>=3.14

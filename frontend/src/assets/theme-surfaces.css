@@ -1,0 +1,1060 @@
+/* Global dark-mode surface overrides for scoped Phase 2 and studio components */
+
+html.dark .mtw-step-body,
+html.dark .mtw-panel-title,
+html.dark .mtw-subtitle,
+html.dark .mtw-config-info {
+  color: var(--theme-text) !important;
+}
+
+html.dark .mtw-param-card,
+html.dark .mtw-algo-card,
+html.dark .mtw-dataset-row,
+html.dark .mtw-target-btn,
+html.dark .mtw-empty-state {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .mtw-algo-card--selected,
+html.dark .mtw-target-btn--selected,
+html.dark .mtw-dataset-row--selected {
+  border-color: var(--theme-accent) !important;
+  background: var(--theme-surface-2) !important;
+}
+
+html.dark .mtw-readiness-list p {
+  background: #422006 !important;
+  border-color: #92400e !important;
+  color: #fef3c7 !important;
+}
+
+html.dark .mtw-recommendation-card {
+  background: #052e16 !important;
+  border-color: #166534 !important;
+  color: #bbf7d0 !important;
+}
+
+html.dark .mtw-recommendation-card span,
+html.dark .mtw-recommendation-card small {
+  color: #86efac !important;
+}
+
+html.dark .gemma-panel {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .gemma-messages {
+  background: var(--theme-bg) !important;
+}
+
+html.dark .gemma-message--assistant {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .gemma-message--thinking,
+html.dark .gemma-tool-log,
+html.dark .gemma-actions,
+html.dark .gemma-status,
+html.dark .gemma-settings {
+  background: var(--theme-surface-2) !important;
+  color: var(--theme-text-muted) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .gemma-action-card {
+  background: #e0f2fe !important;
+  border-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+
+html.dark .gemma-settings select,
+html.dark .gemma-input textarea {
+  background: var(--theme-input-bg) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .xai-storyboard {
+  background: linear-gradient(135deg, var(--theme-surface-2), var(--theme-bg)) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .xai-storyboard__eyebrow {
+  color: #7dd3fc !important;
+}
+
+html.dark .xai-storyboard h3 {
+  color: var(--theme-text) !important;
+}
+
+html.dark .xai-storyboard__badge {
+  background: rgba(14, 165, 233, 0.2) !important;
+  color: #bae6fd !important;
+}
+
+html.dark .xai-storyboard__card {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .xai-storyboard__card strong {
+  color: var(--theme-text) !important;
+}
+
+html.dark .xai-storyboard__card span,
+html.dark .xai-storyboard__card p {
+  color: #cbd5e1 !important;
+}
+
+html.dark .xai-storyboard__next {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #bbf7d0 !important;
+}
+
+html.dark .xai-storyboard__next p {
+  color: #bbf7d0 !important;
+}
+
+html.dark .job-center {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .job-center__item {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .fp-root,
+html.dark .fp-card,
+html.dark .fp-sample-panel,
+html.dark .fp-search,
+html.dark .studio-subtabs__btn,
+html.dark .studio-quality-report {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .fp-card__name,
+html.dark .fp-section-title,
+html.dark .studio-breadcrumbs__current,
+html.dark .workspace-page-head__title {
+  color: var(--theme-text) !important;
+}
+
+html.dark .dh-panel,
+html.dark .dh-kpi {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .result-hero,
+html.dark .result-kpi-card,
+html.dark .result-panel,
+html.dark .result-plot-card,
+html.dark .results-overview,
+html.dark .comparison-kpi,
+html.dark .comparison-shell {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .result-hero__title,
+html.dark .result-kpi-card strong,
+html.dark .results-overview__title {
+  color: var(--theme-text) !important;
+}
+
+html.dark .result-hero__meta,
+html.dark .result-kpi-card__label,
+html.dark .results-overview__subtitle {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .upload-dropzone,
+html.dark .file-label,
+html.dark .upload-hint {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .docs-content,
+html.dark .docs-sidebar,
+html.dark .docs-nav-item {
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .dim-reduction-panel,
+html.dark .dr-control-card,
+html.dark .umap-card,
+html.dark .umap-guide__chip {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .umap-loading__inner,
+html.dark .umap-progress__text {
+  color: var(--theme-text-muted) !important;
+}
+
+/* Keep dark/light swaps smooth for complex page components. */
+html.theme-transition .methods-root,
+html.theme-transition .methods-root *,
+html.theme-transition .studio-quality-report,
+html.theme-transition .studio-quality-report *,
+html.theme-transition .dh-root,
+html.theme-transition .dh-root *,
+html.theme-transition .mtw-root,
+html.theme-transition .mtw-root *,
+html.theme-transition .docs-content,
+html.theme-transition .docs-content * {
+  transition: var(--theme-transition) !important;
+}
+
+/* Methods details page: scoped surfaces only — do not force text on 3D lab panels. */
+html.dark .methods-root .hero-banner,
+html.dark .methods-root .guide-tree,
+html.dark .methods-root .compare-card,
+html.dark .methods-root .compare-card__header,
+html.dark .methods-root .compare-table th,
+html.dark .methods-root .compare-table td,
+html.dark .methods-root .algo-card,
+html.dark .methods-root .algo-card__header,
+html.dark .methods-root .algo-card__body,
+html.dark .methods-root .algo-formula-box,
+html.dark .methods-root .math-objectives,
+html.dark .methods-root .math-definition,
+html.dark .methods-root .math-details,
+html.dark .methods-root .math-complexity-card,
+html.dark .methods-root .math-application-card {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .methods-root .methods-tabs {
+  border-bottom-color: var(--theme-border) !important;
+}
+
+html.dark .methods-root .methods-tab,
+html.dark .methods-root .methods-intro,
+html.dark .methods-root .hero-stat__label,
+html.dark .methods-root .guide-leaf,
+html.dark .methods-root .compare-best,
+html.dark .methods-root .algo-step__text,
+html.dark .methods-root .algo-meta__title,
+html.dark .methods-root .algo-meta__list li,
+html.dark .methods-root .algo-formula-box__title,
+html.dark .methods-root .algo-complexity__item,
+html.dark .methods-root .math-prereqs__label,
+html.dark .methods-root .math-prereq-chip,
+html.dark .methods-root .math-definition__body,
+html.dark .methods-root .math-details__summary,
+html.dark .methods-root .math-derivation-card__body {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .methods-root .methods-tab:hover,
+html.dark .methods-root .methods-tab--active,
+html.dark .methods-root .guide-leaf:hover,
+html.dark .methods-root .hero-stat__count,
+html.dark .methods-root .guide-q,
+html.dark .methods-root .guide-branch__label,
+html.dark .methods-root .algo-card__name,
+html.dark .methods-root .math-definition__title,
+html.dark .methods-root .math-derivation-card__title {
+  color: var(--theme-text) !important;
+}
+
+html.dark .methods-root .methods-tab:hover,
+html.dark .methods-root .methods-tab--active,
+html.dark .methods-root .compare-row:hover,
+html.dark .methods-root .algo-card__header:hover,
+html.dark .methods-root .math-prereq-chip,
+html.dark .methods-root .math-complexity-card,
+html.dark .methods-root .math-application-card {
+  background: var(--theme-surface-2) !important;
+}
+
+/* Data analysis / dataset health page: ensure scoped light vars are overridden. */
+html.dark .studio-quality-report,
+html.dark .dh-root {
+  --dh-ink: var(--theme-text);
+  --dh-muted: #9fb0cb;
+  --dh-border: #334155;
+  --dh-surface: var(--theme-surface);
+  --dh-surface-tint: var(--theme-surface-2);
+}
+
+html.dark .studio-quality-report .dh-hero,
+html.dark .dh-root .dh-hero,
+html.dark .studio-quality-report .dh-kpi,
+html.dark .dh-root .dh-kpi,
+html.dark .studio-quality-report .dh-panel,
+html.dark .dh-root .dh-panel,
+html.dark .studio-quality-report .dh-outlier-card,
+html.dark .dh-root .dh-outlier-card,
+html.dark .studio-quality-report .dh-table-wrap,
+html.dark .dh-root .dh-table-wrap,
+html.dark .studio-quality-report .dh-accordion-item,
+html.dark .dh-root .dh-accordion-item,
+html.dark .studio-quality-report .dh-pill,
+html.dark .dh-root .dh-pill {
+  background: var(--dh-surface) !important;
+  border-color: var(--dh-border) !important;
+  color: var(--dh-ink) !important;
+}
+
+html.dark .studio-quality-report .dh-segmented,
+html.dark .dh-root .dh-segmented,
+html.dark .studio-quality-report .dh-chip,
+html.dark .dh-root .dh-chip {
+  background: var(--dh-surface-2) !important;
+  border-color: var(--dh-border) !important;
+  color: var(--dh-muted) !important;
+}
+
+html.dark .studio-quality-report .dh-warning,
+html.dark .dh-root .dh-warning,
+html.dark .dh-warning-stack .dh-warning {
+  background: #422006 !important;
+  border-color: #92400e !important;
+  color: #fef3c7 !important;
+}
+
+html.dark .studio-quality-report .dh-warning__icon,
+html.dark .dh-root .dh-warning__icon,
+html.dark .dh-warning-stack .dh-warning__icon {
+  color: #fbbf24 !important;
+}
+
+html.dark .studio-quality-report .dh-warning__text,
+html.dark .dh-root .dh-warning__text,
+html.dark .dh-warning-stack .dh-warning__text {
+  color: #fef3c7 !important;
+}
+
+html.dark .studio-quality-report .dh-ok-banner,
+html.dark .dh-root .dh-ok-banner {
+  background: #052e16 !important;
+  border-color: #166534 !important;
+  color: #bbf7d0 !important;
+}
+
+html.dark .studio-quality-report .dh-value-chip,
+html.dark .dh-root .dh-value-chip {
+  background: var(--dh-surface-tint) !important;
+  border-color: var(--dh-border) !important;
+  color: var(--dh-ink) !important;
+}
+
+html.dark .studio-quality-report .dh-outlier-card__action,
+html.dark .dh-root .dh-outlier-card__action {
+  background: rgba(14, 165, 233, 0.15) !important;
+  border-color: rgba(14, 165, 233, 0.3) !important;
+  color: #0369a1 !important;
+}
+
+html.dark .studio-quality-report .dh-chip.is-active,
+html.dark .dh-root .dh-chip.is-active {
+  background: var(--theme-accent) !important;
+  border-color: var(--theme-accent) !important;
+  color: #ffffff !important;
+}
+
+/* Model Training Wizard Dark Mode Overrides */
+html.dark .mtw-stepper {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .mtw-step__dot {
+  background: var(--theme-surface-2) !important;
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .mtw-step--done .mtw-step__dot {
+  background: #10b981 !important;
+  color: #fff !important;
+}
+
+html.dark .mtw-step--active .mtw-step__dot {
+  background: var(--theme-accent) !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 3px rgba(124, 143, 220, 0.25) !important;
+}
+
+html.dark .mtw-step__label {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .mtw-step--done .mtw-step__label {
+  color: #10b981 !important;
+}
+
+html.dark .mtw-step--active .mtw-step__label {
+  color: var(--theme-accent) !important;
+}
+
+html.dark .mtw-step__sep {
+  background: var(--theme-border) !important;
+}
+
+html.dark .mtw-panel {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .mtw-problem-card {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .mtw-problem-card:hover {
+  border-color: var(--theme-accent) !important;
+  box-shadow: 0 4px 16px rgba(124, 143, 220, 0.1) !important;
+}
+
+html.dark .mtw-problem-card--selected {
+  border-color: var(--theme-accent) !important;
+  background: var(--theme-surface-2) !important;
+}
+
+html.dark .mtw-problem-name {
+  color: var(--theme-text) !important;
+}
+
+html.dark .mtw-problem-desc {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .mtw-problem-meta {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .mtw-selected-badge {
+  color: var(--theme-accent) !important;
+}
+
+html.dark .mtw-toggle-row {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .mtw-toggle-desc {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .mtw-toggle-slider {
+  background: var(--theme-border) !important;
+}
+
+html.dark .mtw-toggle input:checked + .mtw-toggle-slider {
+  background: var(--theme-accent) !important;
+}
+
+html.dark .mtw-ready-table {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .mtw-ready-table td {
+  border-bottom-color: var(--theme-border) !important;
+}
+
+html.dark .mtw-ready-table td:first-child {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .mtw-ready-table td:last-child {
+  color: var(--theme-text) !important;
+}
+
+html.dark .mtw-progress-panel {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .mtw-progress-header {
+  color: var(--theme-text) !important;
+}
+
+html.dark .mtw-progress-dot {
+  background: var(--theme-accent) !important;
+}
+
+html.dark .mtw-progress-pct {
+  color: var(--theme-accent) !important;
+}
+
+html.dark .mtw-progress-bar-wrap {
+  background: var(--theme-border) !important;
+}
+
+html.dark .mtw-progress-bar {
+  background: linear-gradient(90deg, var(--theme-accent), #6366f1) !important;
+}
+
+html.dark .mtw-spinner {
+  border-color: var(--theme-border) !important;
+  border-top-color: var(--theme-accent) !important;
+}
+
+html.dark .mtw-status-label {
+  color: var(--theme-text) !important;
+}
+
+html.dark .mtw-status-pct {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .mtw-done-badge {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #4ade80 !important;
+}
+
+html.dark .mtw-model-id {
+  color: #10b981 !important;
+}
+
+html.dark .mtw-cv-option {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .mtw-cv-option:hover {
+  border-color: var(--theme-accent) !important;
+}
+
+html.dark .mtw-cv-option--selected {
+  border-color: var(--theme-accent) !important;
+  background: var(--theme-surface-2) !important;
+}
+
+html.dark .mtw-cv-name {
+  color: var(--theme-text) !important;
+}
+
+html.dark .mtw-cv-desc {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .mtw-metric-name {
+  color: var(--theme-text) !important;
+}
+
+html.dark .mtw-metric-desc {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .mtw-btn--primary {
+  background: var(--theme-accent) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(124, 143, 220, 0.25) !important;
+}
+
+html.dark .mtw-btn--primary:hover:not(:disabled) {
+  background: #0284c7 !important;
+}
+
+html.dark .mtw-btn--ghost {
+  background: var(--theme-surface-2) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .mtw-btn--ghost:hover:not(:disabled) {
+  background: var(--theme-surface) !important;
+}
+
+html.dark .mtw-btn--train {
+  background: var(--theme-accent) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(124, 143, 220, 0.3) !important;
+}
+
+html.dark .mtw-btn--train:hover:not(:disabled) {
+  background: #0284c7 !important;
+}
+
+html.dark .mtw-code-preview,
+html.dark .mtw-train-log {
+  background: var(--theme-surface-2) !important;
+  color: var(--theme-text) !important;
+}
+html.dark .mtw-log-line {
+  color: var(--theme-text-muted) !important;
+}
+
+/* Results Section Dark Mode Overrides */
+html.dark .result-detail-list dd {
+  color: var(--theme-text) !important;
+}
+
+html.dark .result-chip {
+  background: rgba(99, 102, 241, 0.18) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  color: #c7d2fe !important;
+}
+
+html.dark .results-stat {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .results-stat strong {
+  color: var(--theme-text) !important;
+}
+
+html.dark .results-stat__label {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .results-empty {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .results-empty h3 {
+  color: var(--theme-text) !important;
+}
+
+/* ── Help landing ─────────────────────────────────────── */
+html.dark .assistant-help-landing {
+  background:
+    radial-gradient(circle at top left, rgba(79, 70, 229, 0.18), transparent 34%),
+    linear-gradient(135deg, var(--theme-surface), var(--theme-surface-2)) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .assistant-help-landing__eyebrow {
+  color: #a5b4fc !important;
+}
+
+html.dark .assistant-help-landing h2 {
+  color: var(--theme-text) !important;
+}
+
+html.dark .assistant-help-landing p:not(.assistant-help-landing__eyebrow) {
+  color: var(--theme-text-muted) !important;
+}
+
+/* ── Column profiles summary bar & sample table ───────── */
+html.dark .fp-summary-bar {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .fp-summary-pill {
+  color: inherit !important;
+}
+
+html.dark .fp-pill--blue  { background: rgba(59, 130, 246, 0.18) !important; color: #93c5fd !important; }
+html.dark .fp-pill--green { background: rgba(16, 185, 129, 0.18) !important; color: #6ee7b7 !important; }
+html.dark .fp-pill--purple{ background: rgba(139, 92, 246, 0.18) !important; color: #c4b5fd !important; }
+html.dark .fp-pill--orange{ background: rgba(249, 115, 22, 0.18) !important; color: #fdba74 !important; }
+html.dark .fp-pill--red   { background: rgba(239, 68, 68, 0.18) !important; color: #fca5a5 !important; }
+html.dark .fp-pill--grey  { background: rgba(148, 163, 184, 0.15) !important; color: #cbd5e1 !important; }
+
+html.dark .fp-sample-table th {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+html.dark .fp-sample-table td {
+  color: #1e293b !important;
+}
+
+html.dark .fp-sample-table tr:nth-child(odd) td {
+  background: #ffffff !important;
+}
+
+html.dark .fp-sample-table tr:nth-child(even) td {
+  background: #f8fafc !important;
+}
+
+html.dark .fp-sample-table tr:hover td {
+  background: #eff6ff !important;
+}
+
+html.dark .fp-th--num { color: #2563eb !important; border-bottom-color: #93c5fd !important; }
+html.dark .fp-th--cat { color: #ea580c !important; border-bottom-color: #fcd34d !important; }
+
+html.dark .fp-search {
+  background: var(--theme-input-bg) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+/* Light mini-tiles inside dark feature cards */
+html.dark .fp-stat,
+html.dark .fp-quartiles,
+html.dark .fp-sparkline-wrap {
+  background: #f8fafc !important;
+}
+
+html.dark .fp-stat__label,
+html.dark .fp-q-label,
+html.dark .fp-missing-label {
+  color: #64748b !important;
+}
+
+html.dark .fp-stat__val,
+html.dark .fp-q-val,
+html.dark .fp-missing-count {
+  color: #1e293b !important;
+}
+
+html.dark .fp-quartiles {
+  background: #f1f5f9 !important;
+}
+
+html.dark .fp-type-tabs {
+  border-color: #e2e8f0 !important;
+}
+
+html.dark .fp-type-tab {
+  background: #ffffff !important;
+  color: #64748b !important;
+  border-right-color: #e2e8f0 !important;
+}
+
+html.dark .fp-type-tab.is-active {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+html.dark .fp-btn--ghost {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.dark .fp-btn--ghost:hover {
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+html.dark .fp-type-select {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+html.dark .fp-count-chip {
+  background: rgba(148, 163, 184, 0.15) !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark .fp-cat-note {
+  color: #94a3b8 !important;
+}
+
+html.dark .fp-topval-label {
+  color: #475569 !important;
+}
+
+html.dark .fp-topval-pct {
+  color: #92400e !important;
+}
+
+html.dark .fp-skew--right { background: #fff7ed !important; color: #c2410c !important; }
+html.dark .fp-skew--left  { background: #f0f9ff !important; color: #0369a1 !important; }
+html.dark .fp-skew--sym   { background: #f0fdf4 !important; color: #166534 !important; }
+
+html.dark .fp-unique-badge {
+  background: #fff7ed !important;
+  color: #c2410c !important;
+}
+
+html.dark .fp-badge--num  { background: rgba(59, 130, 246, 0.18) !important; color: #93c5fd !important; }
+html.dark .fp-badge--cat  { background: rgba(249, 115, 22, 0.18) !important; color: #fdba74 !important; }
+
+html.dark .fp-empty {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .fp-card__chart,
+html.dark .fp-card__hist {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* ── Results plot cards ───────────────────────────────── */
+html.dark .result-plot-card__head {
+  background: var(--theme-surface-2) !important;
+  border-bottom-color: var(--theme-border) !important;
+}
+
+html.dark .result-plot-card__head h3 {
+  color: var(--theme-text) !important;
+}
+
+html.dark .result-plot-card__head p {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .result-plot-card__body {
+  background: #ffffff !important;
+}
+
+html.dark .result-pending {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .result-panel--guide {
+  background: var(--theme-surface-2) !important;
+}
+
+html.dark .result-panel__title {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .result-panel p:not(.result-panel__title),
+html.dark .result-muted {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .result-detail-list dt {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .result-detail-list dd {
+  color: var(--theme-text) !important;
+}
+
+/* ── Methods 3D lab (dark mode uses default lab-container, not --light) ── */
+html.dark .lab-container .lab-sidebar {
+  background: var(--theme-surface) !important;
+  border-right-color: var(--theme-border) !important;
+}
+
+html.dark .lab-container .sidebar-search {
+  border-bottom-color: var(--theme-border) !important;
+}
+
+html.dark .lab-container .sidebar-search input {
+  background: var(--theme-input-bg) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .lab-container .sidebar-search .search-icon {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .lab-container .sidebar-group__title {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .lab-container .sidebar-item {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .lab-container .sidebar-item:hover {
+  background: var(--theme-surface-2) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .lab-container .sidebar-item--active {
+  background: rgba(14, 165, 233, 0.15) !important;
+  color: #7dd3fc !important;
+  border-left-color: #0ea5e9 !important;
+}
+
+html.dark .lab-container .lab-hud-panel {
+  background: var(--theme-surface) !important;
+  border-left-color: var(--theme-border) !important;
+}
+
+html.dark .lab-container .hud-header,
+html.dark .lab-container .hud-section {
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .lab-container .hud-title {
+  color: var(--theme-text) !important;
+}
+
+html.dark .lab-container .hud-family,
+html.dark .lab-container .hud-desc,
+html.dark .lab-container .hud-param-label,
+html.dark .lab-container .hud-step-text,
+html.dark .lab-container .hud-meta-list li {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .lab-container .hud-section-title {
+  color: var(--theme-text) !important;
+}
+
+html.dark .lab-container .mastery-toggle-btn {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .lab-container .hud-formula-box {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .lab-container .hud-formula-label {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .lab-container .hud-formula-tex,
+html.dark .lab-container .hud-formula-tex mjx-container {
+  color: var(--theme-text) !important;
+}
+
+html.dark .lab-container .hud-param-select {
+  background: var(--theme-input-bg) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .lab-container .viewport-instructions {
+  color: var(--theme-text-muted) !important;
+  background: rgba(15, 23, 42, 0.72) !important;
+}
+
+html.dark .lab-container .tooltip-box {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .lab-container .tooltip-title {
+  color: var(--theme-text) !important;
+}
+
+html.dark .lab-container .tooltip-body {
+  color: var(--theme-text-muted) !important;
+}
+
+/* ── Dimensionality reduction / autoencoder ───────────── */
+html.dark .ae-arch-diagram,
+html.dark .ae-layer-row,
+html.dark .ae-stat-pill {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .ae-layer-header__text,
+html.dark .ae-section__title,
+html.dark .ae-plot-label,
+html.dark .ae-progress__text,
+html.dark .ae-loading,
+html.dark .umap-stat-key,
+html.dark .umap-stats__title,
+html.dark .umap-legend__title {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .ae-stat-pill__val,
+html.dark .umap-stat-val,
+html.dark .umap-legend__label {
+  color: var(--theme-text) !important;
+}
+
+html.dark .pca-kpi-card {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .pca-kpi-card__label,
+html.dark .pca-kpi-card__sub {
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .pca-kpi-card__value {
+  color: var(--theme-text) !important;
+}
+
+html.dark .umap-guide__chip {
+  background: var(--theme-surface-2) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text-muted) !important;
+}
+
+html.dark .umap-cmp th {
+  background: var(--theme-surface-2) !important;
+  color: var(--theme-text-muted) !important;
+  border-bottom-color: var(--theme-border) !important;
+}
+
+html.dark .umap-cmp td {
+  color: var(--theme-text) !important;
+  border-bottom-color: var(--theme-border) !important;
+}
+
+/* ── Gemma action cards ───────────────────────────────── */
+html.dark .gemma-action-card {
+  background: rgba(14, 165, 233, 0.12) !important;
+  border-color: rgba(14, 165, 233, 0.35) !important;
+  color: #bae6fd !important;
+}
+
+/* ── Chart canvases stay light in dark mode ─────────────── */
+html.dark .dh-plot,
+html.dark .distributions-plot-viewport,
+html.dark .distributions-plot,
+html.dark .pca-plot,
+html.dark .ae-plot,
+html.dark #comparison_primary_plot {
+  background: #ffffff !important;
+}
+
+html.dark .dh-plot,
+html.dark .distributions-plot-viewport {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+html.dark .dh-plot .js-plotly-plot .xtick text,
+html.dark .dh-plot .js-plotly-plot .ytick text,
+html.dark .distributions-plot .js-plotly-plot .xtick text,
+html.dark .distributions-plot .js-plotly-plot .ytick text,
+html.dark .result-plot-card__body .js-plotly-plot .xtick text,
+html.dark .result-plot-card__body .js-plotly-plot .ytick text,
+html.dark .fp-card__chart .js-plotly-plot .xtick text,
+html.dark .fp-card__chart .js-plotly-plot .ytick text {
+  fill: #334155 !important;
+}
+
+html.dark .dh-plot .js-plotly-plot .gtitle,
+html.dark .dh-plot .js-plotly-plot .xtitle,
+html.dark .dh-plot .js-plotly-plot .ytitle,
+html.dark .distributions-plot .js-plotly-plot .gtitle,
+html.dark .distributions-plot .js-plotly-plot .xtitle,
+html.dark .distributions-plot .js-plotly-plot .ytitle,
+html.dark .result-plot-card__body .js-plotly-plot .gtitle,
+html.dark .result-plot-card__body .js-plotly-plot .xtitle,
+html.dark .result-plot-card__body .js-plotly-plot .ytitle {
+  fill: #0f172a !important;
+}

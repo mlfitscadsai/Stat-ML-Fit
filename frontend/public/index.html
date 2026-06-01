@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link rel="icon" href="<%= BASE_URL %>favico.png">
+  <title>
+    Machine Learning Tool Kit
+  </title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+    integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link href="https://cdn.datatables.net/v/bm/dt-1.13.8/r-2.5.0/sb-1.6.0/datatables.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML"></script>
+
+</head>
+
+<body>
+  <noscript>
+    <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled.
+        Please enable it to continue.</strong>
+  </noscript>
+
+  <div id="app"></div>
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://code.highcharts.com/modules/heatmap.js"></script>
+  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+  <script type="module">
+    window.addEventListener('load', (event) => {
+      import('https://webr.r-wasm.org/v0.4.3/webr.mjs').then(
+        async ({ WebR }) => {
+          window.webr = new WebR({ interactive: false });
+        }
+      )
+      import('https://code.jquery.com/jquery-3.7.0.min.js').then(() => {
+        import('https://cdn.datatables.net/v/bm/dt-1.13.8/r-2.5.0/sb-1.6.0/datatables.min.js');
+      });
+
+
+    });
+
+  </script>
+</body>
+
+</html>

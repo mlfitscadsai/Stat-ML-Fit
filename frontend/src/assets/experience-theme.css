@@ -1,0 +1,368 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
+
+:root {
+  --ux-bg: #f4f8f7;
+  --ux-surface: #ffffff;
+  --ux-surface-2: #f6fbf9;
+  --ux-surface-blue-1: #eef7ff;
+  --ux-surface-blue-2: #e8f3ff;
+  --ux-surface-blue-3: #f3f9ff;
+  --ux-border: #d5e8e1;
+  --ux-text: #0f2a24;
+  --ux-muted: #4f6d64;
+  --ux-accent: #0e8d73;
+  --ux-accent-2: #ea7e3a;
+  --ux-shadow: 0 14px 30px rgba(16, 64, 50, 0.12);
+}
+
+html,
+body {
+  background:
+    radial-gradient(circle at 8% 10%, rgba(14, 141, 115, 0.14) 0, rgba(14, 141, 115, 0) 35%),
+    radial-gradient(circle at 90% 4%, rgba(234, 126, 58, 0.14) 0, rgba(234, 126, 58, 0) 32%),
+    linear-gradient(180deg, #f8fcfb 0%, var(--ux-bg) 52%, #eef7f4 100%);
+  color: var(--ux-text);
+}
+
+body,
+.button,
+.input,
+.select select,
+.textarea,
+.label,
+.table,
+.tabs a {
+  font-family: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.title,
+.subtitle,
+.message-header,
+.control-title,
+.tabs a {
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.app-shell {
+  min-width: 1120px;
+}
+
+.control-panel,
+.workspace-panel {
+  animation: rise-in 360ms ease-out both;
+}
+
+.control-panel {
+  background: linear-gradient(155deg, var(--ux-surface) 0%, var(--ux-surface-2) 100%);
+  border: 1px solid var(--ux-border);
+  border-radius: 20px;
+  box-shadow: var(--ux-shadow);
+  padding: 0.5rem;
+}
+
+html:not(.dark) .control-panel {
+  background: linear-gradient(160deg, #eef7ff 0%, #e4f1ff 58%, #f1f8ff 100%);
+  border-color: #b8d8f0;
+  box-shadow: 0 14px 30px rgba(38, 90, 136, 0.16);
+}
+
+html:not(.dark) .control-panel .control-content {
+  border-top-color: #b8d8f0;
+  background: rgba(232, 244, 255, 0.65);
+  border-radius: 12px;
+  padding: 0.6rem;
+}
+
+html:not(.dark) .control-panel .has-background-light {
+  background: linear-gradient(180deg, #f5faff 0%, #ecf6ff 100%) !important;
+  border-radius: 12px;
+}
+
+.control-logo {
+  max-width: 160px;
+}
+
+.control-subtitle {
+  color: var(--ux-muted);
+}
+
+.control-content {
+  border-top: 1px solid var(--ux-border);
+  padding-top: 0.6rem;
+}
+
+.control-form {
+  padding-bottom: 0.6rem;
+}
+
+.workspace-panel {
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-border);
+  border-radius: 20px;
+  box-shadow: var(--ux-shadow);
+  overflow: hidden;
+}
+
+.workspace-content {
+  padding: 0.65rem 0.9rem 1rem;
+}
+
+.workspace-tabs .tabs ul {
+  justify-content: flex-start !important;
+  border-bottom: 1px solid var(--ux-border);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.workspace-tabs .tabs a {
+  border-bottom-width: 2px;
+  color: var(--ux-muted);
+  font-weight: 700;
+  font-size: 0.86rem;
+  transition: color 150ms ease, transform 150ms ease;
+}
+
+.workspace-tabs .tabs a:hover {
+  color: var(--ux-accent);
+  transform: translateY(-1px);
+}
+
+.workspace-tabs .tabs li.is-active a {
+  border-bottom-color: var(--ux-accent) !important;
+  color: var(--ux-accent) !important;
+}
+
+.message,
+.notification,
+.box,
+.table-container {
+  border-radius: 14px;
+}
+
+.message {
+  border: 1px solid var(--ux-border);
+  box-shadow: 0 8px 20px rgba(16, 64, 50, 0.08);
+}
+
+.message-header {
+  letter-spacing: 0.01em;
+}
+
+.table th {
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+html:not(.dark) .table th {
+  color: #295145 !important;
+}
+
+.table td {
+  font-size: 0.79rem;
+}
+
+html:not(.dark) .table td,
+html:not(.dark) .table td *,
+html:not(.dark) .table th,
+html:not(.dark) .table th * {
+  color: #15372f !important;
+}
+
+html:not(.dark) .table.is-striped tbody tr:not(.is-selected):nth-child(odd) {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .table.is-striped tbody tr:not(.is-selected):nth-child(even) {
+  background-color: #f4faf7 !important;
+}
+
+.button.is-success,
+.button.is-info {
+  border: none;
+  font-weight: 700;
+}
+
+.button.is-success {
+  background: linear-gradient(135deg, #0ea37f 0%, #0d7f67 100%) !important;
+}
+
+.button.is-info {
+  background: linear-gradient(135deg, #2f88c9 0%, #216ca6 100%) !important;
+}
+
+.button.is-success:hover,
+.button.is-info:hover {
+  filter: brightness(1.05);
+}
+
+.button[disabled],
+button[disabled],
+.button.is-disabled,
+fieldset[disabled] .button {
+  opacity: 1 !important;
+  background: #8f9f99 !important;
+  border-color: #7d8e88 !important;
+  color: #f4f8f6 !important;
+  text-shadow: none !important;
+  cursor: not-allowed;
+}
+
+.dark-mode-toggle {
+  border: 1px solid var(--ux-border);
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(16, 64, 50, 0.14);
+}
+
+.field:not(:last-child) {
+  margin-bottom: 0.7rem;
+}
+
+html:not(.dark) .select select,
+html:not(.dark) .input,
+html:not(.dark) .textarea {
+  background-color: #ffffff !important;
+  color: #10251f !important;
+  border-radius: 10px;
+  border-color: #c8ddd5;
+  box-shadow: none;
+}
+
+html:not(.dark) .select select option {
+  color: #10251f;
+}
+
+html:not(.dark) .label,
+html:not(.dark) .checkbox,
+html:not(.dark) .radio,
+html:not(.dark) .b-checkbox.checkbox span {
+  color: #173a31 !important;
+}
+
+html:not(.dark) .select select:focus,
+html:not(.dark) .input:focus,
+html:not(.dark) .textarea:focus {
+  border-color: var(--ux-accent);
+  box-shadow: 0 0 0 0.14rem rgba(14, 141, 115, 0.18);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+html.dark body {
+  background:
+    radial-gradient(circle at 10% 10%, rgba(86, 222, 188, 0.16) 0, rgba(86, 222, 188, 0) 32%),
+    radial-gradient(circle at 88% 8%, rgba(255, 175, 122, 0.15) 0, rgba(255, 175, 122, 0) 30%),
+    linear-gradient(180deg, #0f171f 0%, #111b22 60%, #0e171f 100%) !important;
+}
+
+html.dark .control-panel,
+html.dark .workspace-panel {
+  background: linear-gradient(160deg, #1b2833 0%, #17242f 100%) !important;
+  border-color: #2d4454 !important;
+  box-shadow: 0 14px 32px rgba(4, 10, 16, 0.42);
+}
+
+html.dark .workspace-tabs .tabs ul,
+html.dark .control-content {
+  border-color: #2d4454;
+}
+
+html.dark .workspace-tabs .tabs a {
+  color: #a8c4d3 !important;
+}
+
+html.dark .workspace-tabs .tabs li.is-active a {
+  color: #5dd8b7 !important;
+  border-bottom-color: #5dd8b7 !important;
+}
+
+html.dark .control-subtitle {
+  color: #aac0cb;
+}
+
+html.dark .table td,
+html.dark .table td *,
+html.dark .table th,
+html.dark .table th * {
+  color: #d9e7f0 !important;
+}
+
+html.dark .input,
+html.dark .textarea,
+html.dark .select select {
+  background-color: #101b26 !important;
+  color: #e9f3fb !important;
+  border-color: #365266 !important;
+}
+
+html.dark .label,
+html.dark .checkbox,
+html.dark .radio,
+html.dark .b-checkbox.checkbox span {
+  color: #d5e8f4 !important;
+}
+
+html.dark .button[disabled],
+html.dark button[disabled],
+html.dark .button.is-disabled,
+html.dark fieldset[disabled] .button {
+  background: #4f5774 !important;
+  border-color: #69749b !important;
+  color: #eef2ff !important;
+  text-shadow: none !important;
+}
+
+html:not(.dark) .b-checkbox.checkbox .check {
+  background: #ffffff !important;
+  border: 2px solid #245247 !important;
+}
+
+html:not(.dark) .b-checkbox.checkbox input[type="checkbox"]:checked + .check {
+  background: #0ea37f !important;
+  border-color: #0ea37f !important;
+}
+
+html.dark .b-checkbox.checkbox .check {
+  background: #141f2b !important;
+  border: 2px solid #6c7ca3 !important;
+}
+
+html.dark .b-checkbox.checkbox input[type="checkbox"]:checked + .check {
+  background: #16c4a0 !important;
+  border-color: #16c4a0 !important;
+}
+
+html.dark .js-plotly-plot .gtitle,
+html.dark .js-plotly-plot .xtitle,
+html.dark .js-plotly-plot .ytitle,
+html.dark .js-plotly-plot .legendtext,
+html.dark .js-plotly-plot .annotation-text {
+  fill: var(--theme-text) !important;
+}
+
+.highcharts-axis-labels text {
+  fill: var(--theme-text-muted) !important;
+  color: var(--theme-text-muted) !important;
+}
+
+.highcharts-axis-title,
+.highcharts-title,
+.highcharts-legend-item text {
+  fill: var(--theme-text) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .dark-mode-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #406174;
+  box-shadow: none;
+}

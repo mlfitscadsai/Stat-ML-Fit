@@ -1,0 +1,15 @@
+# Legacy workflow — deploys are handled by deploy.yml (push to vjs3/main/master).
+# Kept for manual smoke tests on the self-hosted runner only.
+
+name: ML Fit deploy (legacy)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke-self-hosted:
+    runs-on: self-hosted
+    steps:
+      - run: echo "Self-hosted runner OK — use .github/workflows/deploy.yml for production deploys"
+      - uses: actions/checkout@v4
+      - run: echo "Workspace ${{ github.workspace }}"

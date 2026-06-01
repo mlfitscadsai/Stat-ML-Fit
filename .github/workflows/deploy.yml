@@ -1,0 +1,211 @@
+# Deploy Stat-ML-Fit to SCADS VM (nginx static SPA, no Docker required for frontend).
+#
+# VM: ssh gg1991@141.76.17.229
+# Nginx root: /opt/stat-ml-fit/frontend/dist
+#
+# Option A (default on push): self-hosted runner on the VM — build lands in frontend/dist.
+# Option B: workflow_dispatch with deploy_via_ssh=true — needs repo secrets:
+#   SSH_HOST, SSH_USER, SSH_PRIVATE_KEY (optional: override DEPLOY_DIST via vars)
+#
+# Optional repo variable: FORCE_SSH_DEPLOY=true — always use SSH job on push.
+#
+# After first deploy, ensure nginx includes /api proxy (see deploy/nginx/stat-ml-fit.scads.ai.conf).
+
+name: Deploy to ML Fit VM
+
+on:
+  push:
+    branches:
+      - vjs3
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      deploy_via_ssh:
+        description: Deploy built dist via SSH from GitHub cloud runner
+        type: boolean
+        default: false
+      update_nginx:
+        description: Install deploy/nginx/stat-ml-fit.scads.ai.conf and reload nginx
+        type: boolean
+        default: true
+      update_backend:
+        description: On VM, run docker compose up -d --build in DEPLOY_ROOT
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-mlfit-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: --max-old-space-size=8192
+  # VITE_API_BASE=/api is set only on deploy jobs (not test) — see build steps below
+  # Override via repo Settings → Variables: SSH_HOST, SSH_USER, DEPLOY_ROOT, DEPLOY_DIST
+  SSH_HOST: ${{ vars.SSH_HOST != '' && vars.SSH_HOST || '141.76.17.229' }}
+  SSH_USER: ${{ vars.SSH_USER != '' && vars.SSH_USER || 'gg1991' }}
+  DEPLOY_ROOT: ${{ vars.DEPLOY_ROOT != '' && vars.DEPLOY_ROOT || '/opt/stat-ml-fit' }}
+  DEPLOY_DIST: ${{ vars.DEPLOY_DIST != '' && vars.DEPLOY_DIST || '/opt/stat-ml-fit/frontend/dist' }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend unit tests
+        working-directory: frontend
+        run: npm ci && npm run test:unit
+
+      - name: Backend tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+          pytest backend/tests -q
+
+  deploy-self-hosted:
+    name: Deploy (self-hosted runner)
+    needs: test
+    if: |
+      vars.FORCE_SSH_DEPLOY != 'true' &&
+      (
+        github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && inputs.deploy_via_ssh != true)
+      )
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          CI: true
+          DOCKER_BUILD: true
+          VITE_API_BASE: /api
+        run: npm ci && npm run build
+
+      - name: Sync dist to nginx document root
+        run: |
+          set -euo pipefail
+          SRC="${GITHUB_WORKSPACE}/frontend/dist"
+          DEST="${{ env.DEPLOY_DIST }}"
+          mkdir -p "$DEST"
+          if command -v rsync >/dev/null 2>&1; then
+            rsync -a --delete "${SRC}/" "${DEST}/"
+          else
+            rm -rf "${DEST:?}"/*
+            cp -a "${SRC}/." "${DEST}/"
+          fi
+          test -f "${DEST}/index.html"
+          echo "Deployed $(du -sh "${DEST}" | cut -f1) to ${DEST}"
+
+      - name: Install nginx site config
+        if: github.event_name != 'workflow_dispatch' || inputs.update_nginx == true
+        run: |
+          set -euo pipefail
+          sudo cp "${GITHUB_WORKSPACE}/deploy/nginx/stat-ml-fit.scads.ai.conf" \
+            /etc/nginx/sites-available/stat-ml-fit.scads.ai
+          sudo ln -sf /etc/nginx/sites-available/stat-ml-fit.scads.ai \
+            /etc/nginx/sites-enabled/stat-ml-fit.scads.ai
+          sudo nginx -t
+          sudo systemctl reload nginx
+
+      - name: Update backend (Docker)
+        if: github.event_name == 'workflow_dispatch' && inputs.update_backend == true
+        run: |
+          set -euo pipefail
+          for ROOT in "${{ env.DEPLOY_ROOT }}" "${GITHUB_WORKSPACE}"; do
+            if [ -f "${ROOT}/docker-compose.prod.yaml" ]; then
+              cd "${ROOT}" && docker compose -f docker-compose.prod.yaml up -d --build
+              exit 0
+            fi
+          done
+          echo "::error::docker-compose.prod.yaml not found in DEPLOY_ROOT or workspace"
+          exit 1
+
+      - name: Verify deployment
+        run: |
+          curl -fsS -o /dev/null -w "index.html HTTP %{http_code}\n" \
+            "file://${{ env.DEPLOY_DIST }}/index.html" || \
+          test -f "${{ env.DEPLOY_DIST }}/index.html"
+          curl -fsS -I http://127.0.0.1:5001/ | head -5 || \
+            echo "Note: Flask on :5001 not reachable (start docker compose if API is needed)"
+
+  deploy-ssh:
+    name: Deploy (SSH from cloud)
+    needs: test
+    if: |
+      (
+        github.event_name == 'workflow_dispatch' && inputs.deploy_via_ssh == true
+      ) || vars.FORCE_SSH_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          CI: true
+          DOCKER_BUILD: true
+          VITE_API_BASE: /api
+        run: npm ci && npm run build
+
+      - name: Check SSH secrets
+        run: |
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "::error::Set repository secret SSH_PRIVATE_KEY (and optionally SSH_HOST, SSH_USER vars)"
+            exit 1
+          fi
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Trust VM host key
+        run: ssh-keyscan -H "${{ env.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Rsync frontend dist to VM
+        run: |
+          rsync -avz --delete \
+            frontend/dist/ \
+            "${{ env.SSH_USER }}@${{ env.SSH_HOST }}:${{ env.DEPLOY_DIST }}/"
+
+      - name: Install nginx config and reload
+        if: github.event_name != 'workflow_dispatch' || inputs.update_nginx == true
+        run: |
+          scp deploy/nginx/stat-ml-fit.scads.ai.conf \
+            "${{ env.SSH_USER }}@${{ env.SSH_HOST }}:/tmp/stat-ml-fit.scads.ai.conf"
+          ssh "${{ env.SSH_USER }}@${{ env.SSH_HOST }}" \
+            'sudo cp /tmp/stat-ml-fit.scads.ai.conf /etc/nginx/sites-available/stat-ml-fit.scads.ai && \
+             sudo ln -sf /etc/nginx/sites-available/stat-ml-fit.scads.ai /etc/nginx/sites-enabled/stat-ml-fit.scads.ai && \
+             sudo nginx -t && sudo systemctl reload nginx'
+
+      - name: Update backend (Docker)
+        if: github.event_name == 'workflow_dispatch' && inputs.update_backend == true
+        run: |
+          ssh "${{ env.SSH_USER }}@${{ env.SSH_HOST }}" \
+            "cd '${{ env.DEPLOY_ROOT }}' && docker compose -f docker-compose.prod.yaml up -d --build"
+
+      - name: Smoke check
+        run: |
+          ssh "${{ env.SSH_USER }}@${{ env.SSH_HOST }}" \
+            "test -f '${{ env.DEPLOY_DIST }}/index.html' && ls -la '${{ env.DEPLOY_DIST }}/index.html'"
