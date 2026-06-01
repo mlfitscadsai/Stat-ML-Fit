@@ -151,6 +151,26 @@ curl -s http://127.0.0.1:5001/health | python3 -m json.tool
 
 Keep `.env` only on the server. It is loaded via `env_file` in `docker-compose.prod.yaml`.
 
+### HPC vs browser features
+
+| Feature | Needs HPC `.env`? |
+|---------|-------------------|
+| Upload data, charts, browser ML (TensorFlow.js) | No |
+| `/run`, `/progress`, HPC job center | Yes |
+
+A `503` from `curl http://127.0.0.1:5001/run` with `"hpc_configured":false` is **expected** until `.env` is set. The site should still load.
+
+### webR (`Content-Encoding` in browser console)
+
+Regression models use **webR in the browser**. Assets are copied to `/webr/` at `npm run build` (same origin). After pulling updates, rebuild the frontend and reload nginx:
+
+```bash
+cd /opt/stat-ml-fit
+git pull origin main
+bash scripts/vm-deploy.sh
+sudo bash scripts/install-nginx-config.sh
+```
+
 ---
 
 ## Nginx

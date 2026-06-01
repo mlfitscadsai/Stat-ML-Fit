@@ -28,7 +28,6 @@
   <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
   <link rel="dns-prefetch" href="https://cdn.datatables.net">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-  <link rel="dns-prefetch" href="https://webr.r-wasm.org">
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
     integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
@@ -45,13 +44,22 @@
 
   <script id="MathJax-script" async defer fetchpriority="low" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-  <script>
-    window.addEventListener('load', (event) => {
-      import('https://webr.r-wasm.org/v0.4.3/webr.mjs').then(
-        async ({ WebR }) => {
-          window.webr = new WebR({ interactive: false });
-        }
-      )
+  <script type="module">
+    window.addEventListener('load', async () => {
+      try {
+        const baseUrl = new URL('/webr/dist/', window.location.href).href;
+        const swUrl = new URL('/webr/', window.location.href).href;
+        const { WebR } = await import(new URL('webr.mjs', baseUrl).href);
+        const webR = new WebR({
+          baseUrl,
+          serviceWorkerUrl: swUrl,
+          interactive: false,
+        });
+        await webR.init();
+        window.webr = webR;
+      } catch (err) {
+        console.warn('WebR init failed (in-browser R features disabled):', err);
+      }
     });
   </script>
 </body>
