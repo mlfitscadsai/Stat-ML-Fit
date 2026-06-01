@@ -44,8 +44,7 @@
 </template>
 
 <script>
-import SidebarComponent from "./components/sidebar-component.vue";
-import MainComponent from "./components/main-component.vue";
+import { defineAsyncComponent } from 'vue'
 import LandingPage from '@/components/landing/landing-page.vue'
 import { settingStore } from '@/stores/settings'
 import { mapStores, mapActions } from 'pinia'
@@ -53,6 +52,9 @@ import { runSidebarTraining, validateConfig } from '@/services/training/training
 import { loadExperiments } from '@/services/experiments/experiment-store'
 import { getStoredTheme } from '@/services/theme/theme-service'
 import ThemeToggle from '@/components/theme/theme-toggle.vue'
+
+const SidebarComponent = defineAsyncComponent(() => import('./components/sidebar-component.vue'))
+const MainComponent = defineAsyncComponent(() => import('./components/main-component.vue'))
 
 const LANDING_ENTERED_KEY = 'mlfitLandingEntered'
 

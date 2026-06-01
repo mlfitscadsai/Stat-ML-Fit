@@ -1,6 +1,14 @@
-import * as tf from "@tensorflow/tfjs";
-import "@tensorflow/tfjs-backend-cpu";
-import "@tensorflow/tfjs-backend-webgl";
+let tfModule = null;
+
+async function getTf() {
+    if (!tfModule) {
+        const tf = await import('@tensorflow/tfjs');
+        await import('@tensorflow/tfjs-backend-cpu');
+        await import('@tensorflow/tfjs-backend-webgl');
+        tfModule = tf;
+    }
+    return tfModule;
+}
 
 export default class Autoencoder {
     normalizeActivation(value, fallback = "relu") {
@@ -12,6 +20,7 @@ export default class Autoencoder {
     }
 
     async ensureBackend() {
+        const tf = await getTf();
         await tf.ready();
         const backends = tf.engine().registry ? Object.keys(tf.engine().registry) : [];
         const hasWebgl = backends.includes("webgl");
@@ -24,21 +33,6 @@ export default class Autoencoder {
         }
     }
 
-    /**
-     * Fit a symmetric autoencoder with configurable hidden layers.
-     *
-     * @param {number[][]} x - 2-D input matrix
-     * @param {number} latentSize - bottleneck dimension (must be ≥ 2)
-     * @param {number} epochs
-     * @param {{ units: number, activation: string }[]} encoderLayers - hidden layers before the bottleneck
-     * @param {string} latentActivation - activation at the bottleneck
-     * @param {string} decoderOutputActivation - final decoder activation
-     * @param {number} seed
-     * @param {number} learningRate
-     * @param {string} optimizer - 'adam' | 'rmsprop' | 'sgd'
-     * @param {function(epoch, totalEpochs, loss):void} [onEpoch] - progress callback
-     * @returns {{ encoded: number[][], history: { loss: number[], valLoss: number[] } }}
-     */
     async predict(
         x,
         latentSize,
@@ -51,6 +45,7 @@ export default class Autoencoder {
         optimizer = "adam",
         onEpoch = null
     ) {
+        const tf = await getTf();
         const safeLatent = Math.max(2, Number(latentSize) || 2);
         const safeEpochs = Math.max(1, Number(epochs) || 100);
         const safeSeed = Math.max(0, Math.floor(Number(seed) || 123));
@@ -58,9 +53,8 @@ export default class Autoencoder {
         const latentAct = this.normalizeActivation(latentActivation, "relu");
         const decOutAct = this.normalizeActivation(decoderOutputActivation, "linear");
 
-        // Normalise encoder layer specs
         const hiddenLayers = Array.isArray(encoderLayers) && encoderLayers.length > 0
-            ? encoderLayers.map((l, i) => ({
+            ? encoderLayers.map((l) => ({
                 units: Math.max(2, Number(l.units) || 32),
                 activation: this.normalizeActivation(l.activation, "relu"),
             }))
@@ -85,7 +79,6 @@ export default class Autoencoder {
             stdTensor = tf.tidy(() => varianceTensor.sqrt().add(1e-7));
             normalizedTensor = tf.tidy(() => inputTensor.sub(meanTensor).div(stdTensor));
 
-            // ── Build encoder ──────────────────────────────────────────────
             const inputLayer = tf.input({ shape: [inputDim] });
             let enc = inputLayer;
             let seedOffset = 0;
@@ -98,7 +91,6 @@ export default class Autoencoder {
                 }).apply(enc);
                 seedOffset++;
             }
-            // Bottleneck
             const bottleneck = tf.layers.dense({
                 units: Math.min(safeLatent, inputDim),
                 activation: latentAct,
@@ -108,7 +100,6 @@ export default class Autoencoder {
             }).apply(enc);
             seedOffset++;
 
-            // ── Build decoder (mirror encoder in reverse) ──────────────────
             let dec = bottleneck;
             for (let i = hiddenLayers.length - 1; i >= 0; i--) {
                 dec = tf.layers.dense({

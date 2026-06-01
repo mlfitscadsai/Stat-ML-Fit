@@ -21,14 +21,6 @@ export default defineConfig({
         }
     },
 
-    optimizeDeps: {
-        include: [
-            '@tensorflow/tfjs',
-            '@tensorflow/tfjs-backend-cpu',
-            '@tensorflow/tfjs-backend-webgl',
-        ],
-    },
-
     server: {
         port: 3000,
         open: true // automatically open browser
@@ -44,6 +36,7 @@ export default defineConfig({
                 );
             },
         },
+        chunkSizeWarningLimit: 6000,
         rollupOptions: {
             output: {
                 manualChunks: manualChunkFor,
