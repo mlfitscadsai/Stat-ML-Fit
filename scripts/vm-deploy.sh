@@ -12,6 +12,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/compose.sh
+source "${SCRIPT_DIR}/lib/compose.sh"
+
 APP_ROOT="${APP_ROOT:-/opt/stat-ml-fit}"
 GIT_BRANCH="${GIT_BRANCH:-vjs3}"
 VITE_API_BASE="${VITE_API_BASE:-/api}"
@@ -49,8 +53,8 @@ fi
 
 if [[ "${SKIP_DOCKER:-0}" != "1" ]]; then
   echo "==> Starting API container"
-  docker compose -f "${COMPOSE_FILE}" up -d --build
-  docker compose -f "${COMPOSE_FILE}" ps
+  compose -f "${COMPOSE_FILE}" up -d --build
+  compose -f "${COMPOSE_FILE}" ps
 fi
 
 if [[ "${SKIP_NGINX:-0}" != "1" ]]; then

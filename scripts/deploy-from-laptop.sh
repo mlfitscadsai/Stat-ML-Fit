@@ -25,6 +25,6 @@ rsync -avz deploy/nginx/stat-ml-fit.scads.ai.conf "${SSH_TARGET}:${APP_ROOT}/dep
 rsync -avz docker-compose.prod.yaml Dockerfile.api "${SSH_TARGET}:${APP_ROOT}/"
 
 echo "==> Remote: nginx + docker"
-ssh "${SSH_TARGET}" "cd '${APP_ROOT}' && sudo bash scripts/install-nginx-config.sh && docker compose -f docker-compose.prod.yaml up -d --build"
+ssh "${SSH_TARGET}" "cd '${APP_ROOT}' && sudo bash scripts/install-nginx-config.sh && bash -c 'source scripts/lib/compose.sh && compose -f docker-compose.prod.yaml up -d --build'"
 
 echo "==> Done → https://stat-ml-fit.scads.ai/"

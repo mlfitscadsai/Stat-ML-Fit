@@ -16,6 +16,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/compose.sh
+source "${SCRIPT_DIR}/lib/compose.sh"
+
 APP_ROOT="${APP_ROOT:-/opt/stat-ml-fit}"
 GIT_BRANCH="${GIT_BRANCH:-vjs3}"
 REPO="${REPO:-https://github.com/PurebyteAI/Stat-ML-Fit-v2.0.git}"
@@ -30,12 +34,14 @@ sudo apt-get update
 sudo apt-get install -y ca-certificates curl git nginx rsync
 
 if ! command -v docker >/dev/null 2>&1; then
-  echo "==> Installing Docker"
-  sudo apt-get install -y docker.io docker-compose-plugin
+  echo "==> Installing Docker engine"
+  sudo apt-get install -y docker.io
   sudo systemctl enable --now docker
   sudo usermod -aG docker "${USER}"
   echo "    Added ${USER} to docker group (log out/in if docker permission denied)"
 fi
+
+ensure_docker_compose
 
 NODE_MAJOR="$(node -v 2>/dev/null | sed 's/v//' | cut -d. -f1 || echo 0)"
 if [[ "${NODE_MAJOR}" -lt 22 ]]; then
