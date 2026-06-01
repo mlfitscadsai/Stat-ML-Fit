@@ -1,136 +1,126 @@
-# Deployment Guide: Current ML Fit Project to SSH VM
+# Stat-ML-Fit deployment guide
 
-This guide updates the deployed ML Fit project on the Debian VM:
+Deploy the [mlfitscadsai/Stat-ML-Fit](https://github.com/mlfitscadsai/Stat-ML-Fit) application to the SCADS Debian VM.
 
-```bash
-ssh gg1991@141.76.17.229
-```
+| Item | Value |
+|------|--------|
+| **Site** | https://stat-ml-fit.scads.ai/ |
+| **VM** | `ssh gg1991@141.76.17.229` |
+| **App root** | `/opt/stat-ml-fit` |
+| **Nginx static root** | `/opt/stat-ml-fit/frontend/dist` |
+| **Flask API (Docker)** | `127.0.0.1:5001` → container port `5000` |
+| **Default branch** | `main` |
 
-Do not store the VM password in this file, Git, GitHub Actions, or shell history. Prefer an SSH key when possible.
+Do not store VM passwords, tokens, or HPC credentials in Git, GitHub Actions logs, or this file. Use SSH keys and a VM-local `.env` file.
 
-## Current VM Context
+---
 
-From the VM inspection:
-
-- Existing app workspace: `/var/www/actions-runner/_work/mlfit/mlfit`
-- Existing app/data path: `/var/www/aikit`
-- Large disk usage is mostly:
-  - `/var/www/actions-runner/_work/mlfit/mlfit/frontend`
-  - old GitHub runner versions under `/var/www/actions-runner`
-  - `/var/log` and `/var/cache`
-- Current project has:
-  - `Dockerfile`: builds Vue frontend, installs Flask backend, serves `frontend/dist` from Flask
-  - `docker-compose.yaml`: exposes host `5001` to container `5000`
-  - backend HPC credentials read from `HPC_HOST`, `HPC_USER`, `HPC_PASSWORD`
-
-## 1. SSH Into The VM
-
-```bash
-ssh gg1991@141.76.17.229
-```
-
-After login, go to the deployed project:
-
-```bash
-cd /var/www/actions-runner/_work/mlfit/mlfit
-pwd
-```
-
-Expected:
+## Architecture
 
 ```text
-/var/www/actions-runner/_work/mlfit/mlfit
+Browser → HTTPS (nginx) → /opt/stat-ml-fit/frontend/dist  (Vue SPA)
+                       → /api/* proxied to 127.0.0.1:5001 (Flask in Docker)
 ```
 
-## 2. Check The Current Running Deployment
+- **Frontend:** built with `VITE_API_BASE=/api` so API calls are same-origin via nginx.
+- **Backend:** Flask app in Docker; `docker-compose.yaml` maps host `5001:5000`.
+- **Nginx config:** `deploy/nginx/stat-ml-fit.scads.ai.conf` (install with `scripts/install-nginx-config.sh`).
 
-Check whether Docker Compose is already running:
+---
+
+## Prerequisites
+
+- SSH access as `gg1991` (key-based login recommended).
+- DNS / TLS for `stat-ml-fit.scads.ai` (Let’s Encrypt paths in the nginx config).
+- GitHub repo access to clone `https://github.com/mlfitscadsai/Stat-ML-Fit.git`.
+
+**Never commit:** `node_modules/`, `frontend/dist/`, `.env`, or virtualenvs (see `.gitignore`).
+
+---
+
+## First-time VM setup (recommended)
+
+Run on the VM as `gg1991` (not root):
 
 ```bash
-docker compose ps
+curl -fsSL https://raw.githubusercontent.com/mlfitscadsai/Stat-ML-Fit/main/scripts/vm-bootstrap.sh | bash
 ```
 
-If the VM has the older Compose binary:
+Or from a local checkout copied to the VM:
 
 ```bash
-docker-compose ps
+bash /path/to/Stat-ML-Fit/scripts/vm-bootstrap.sh
 ```
 
-Check which process is using the app port:
+`vm-bootstrap.sh` will:
+
+1. Install system packages, Docker (`docker.io`), Docker Compose (apt package, `docker-compose`, or binary fallback).
+2. Install Node.js 22 if needed.
+3. Clone or update the repo at `/opt/stat-ml-fit` from `mlfitscadsai/Stat-ML-Fit` on branch `main`.
+4. Run `scripts/vm-deploy.sh` (build frontend, start API, install nginx).
+
+**Optional environment variables:**
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `APP_ROOT` | `/opt/stat-ml-fit` | Install directory |
+| `GIT_BRANCH` | `main` | Branch to clone/pull |
+| `REPO` | `https://github.com/mlfitscadsai/Stat-ML-Fit.git` | Git remote |
+| `GITHUB_TOKEN` | (unset) | For private clone over HTTPS |
+| `SKIP_CLONE` | `0` | Set to `1` if repo already present |
+
+After Docker install, log out and back in (or `newgrp docker`) if `docker` permission is denied.
+
+---
+
+## Routine updates on the VM
 
 ```bash
-sudo ss -ltnp | grep ':5001' || true
+cd /opt/stat-ml-fit
+bash scripts/vm-deploy.sh
 ```
 
-Check disk before updating:
+`vm-deploy.sh` pulls `main`, builds the frontend, starts Docker, and reloads nginx.
+
+**Skip steps when needed:**
+
+| Variable | Effect |
+|----------|--------|
+| `SKIP_GIT=1` | Do not `git pull` |
+| `SKIP_FRONTEND=1` | Skip `npm ci` / `npm run build` |
+| `SKIP_DOCKER=1` | Skip Docker rebuild |
+| `SKIP_NGINX=1` | Skip nginx config install |
+
+**Compose file:** scripts default to `docker-compose.prod.yaml`. The repo currently ships `docker-compose.yaml` for the API. Until a prod compose file is added, run:
 
 ```bash
-df -h
-sudo du -sh /var/www/actions-runner/_work/mlfit/mlfit/frontend 2>/dev/null || true
-sudo du -sh /var/log /var/cache /var/www/actions-runner/_work/mlfit 2>/dev/null
+COMPOSE_FILE=docker-compose.yaml bash scripts/vm-deploy.sh
 ```
 
-## 3. Backup The Current Deployment
+---
 
-Create a lightweight backup of deployment files before pulling updates:
+## Deploy from your laptop
+
+Build locally, rsync `frontend/dist`, refresh nginx and API on the VM:
 
 ```bash
-cd /var/www/actions-runner/_work/mlfit/mlfit
-mkdir -p /var/www/backups/mlfit
-tar --exclude='frontend/node_modules' \
-  --exclude='frontend/dist' \
-  --exclude='frontend/coverage' \
-  --exclude='.git' \
-  -czf "/var/www/backups/mlfit/mlfit-$(date +%Y%m%d-%H%M%S).tar.gz" .
-ls -lh /var/www/backups/mlfit | tail
+# From repo root
+VITE_API_BASE=/api ./scripts/deploy-from-laptop.sh
 ```
 
-## 4. Clean Safe Generated Files
+Defaults: `SSH_TARGET=gg1991@141.76.17.229`, `APP_ROOT=/opt/stat-ml-fit`.
 
-These folders are generated locally and can consume a lot of disk. Remove them before rebuilding:
+Requires SSH key login. Ensure `docker-compose.prod.yaml` exists on the VM or adjust the script to use `docker-compose.yaml`.
 
-```bash
-cd /var/www/actions-runner/_work/mlfit/mlfit
-rm -rf frontend/node_modules frontend/dist frontend/coverage
-docker builder prune -f
-docker image prune -f
-```
+---
 
-Optional log/cache cleanup if disk is still tight:
+## Environment variables (HPC)
+
+On the VM:
 
 ```bash
-sudo journalctl --vacuum-time=7d
-sudo apt-get clean
-```
-
-Do not delete `/var/www/actions-runner/_work/mlfit/mlfit/backend/files` unless you intentionally want to remove uploaded datasets.
-
-## 5. Pull The Current Project Updates
-
-If the VM checkout tracks the Git repository:
-
-```bash
-cd /var/www/actions-runner/_work/mlfit/mlfit
-git status --short
-git pull --ff-only
-```
-
-If `git pull --ff-only` fails because the VM has local edits, inspect them first:
-
-```bash
-git status
-git diff --stat
-```
-
-Do not run `git reset --hard` unless you are sure the VM has no valuable local-only changes.
-
-## 6. Configure Environment Variables
-
-The backend reads HPC settings from environment variables. Create or update a VM-only `.env` file:
-
-```bash
-cd /var/www/actions-runner/_work/mlfit/mlfit
-nano .env
+cp /opt/stat-ml-fit/deploy/env.example /opt/stat-ml-fit/.env
+nano /opt/stat-ml-fit/.env
 ```
 
 Example:
@@ -142,95 +132,20 @@ HPC_USER=your-hpc-user
 HPC_PASSWORD=your-hpc-password
 ```
 
-Keep `.env` out of Git. If `.env` is not ignored in the deployed checkout, do not commit it.
+Keep `.env` only on the server. Wire it into Docker via `env_file` in your compose file when you add production compose settings.
 
-If using Docker Compose with `.env`, update `docker-compose.yaml` on the VM or in the repo so the service receives these variables:
+---
 
-```yaml
-services:
-  web:
-    env_file:
-      - .env
-```
+## Nginx
 
-The current compose file already supports direct environment values for `HPC_HOST`, `HPC_USER`, and `HPC_PASSWORD`.
-
-## 7. Build And Start The Updated App
-
-From the project directory:
+Install or refresh site config from the repo:
 
 ```bash
-cd /var/www/actions-runner/_work/mlfit/mlfit
-docker compose up -d --build
-```
-
-Fallback for older Docker Compose:
-
-```bash
-docker-compose up -d --build
-```
-
-The build compiles the frontend and packages the Flask app into the final image. The app should be available on VM port `5001`.
-
-## 8. Verify The Deployment
-
-Check container status:
-
-```bash
-docker compose ps
-docker compose logs --tail=100 web
-```
-
-Fallback:
-
-```bash
-docker-compose ps
-docker-compose logs --tail=100 web
-```
-
-Check the HTTP response locally on the VM:
-
-```bash
-curl -I http://127.0.0.1:5001/
-curl http://127.0.0.1:5001/jobs/test-job-id
-```
-
-Expected:
-
-- `/` returns an HTML response or `200 OK`
-- `/jobs/test-job-id` returns JSON with a job status, or an HPC connection error only if the route tries to reach unavailable HPC settings
-
-From your local machine, open:
-
-```text
-http://141.76.17.229:5001/
-```
-
-If the page does not load, check firewall/reverse proxy rules:
-
-```bash
-sudo ufw status
-sudo ss -ltnp | grep ':5001'
-```
-
-## 9. Nginx: static SPA + `/api` → Flask
-
-Production uses **same-origin HTTPS**: the Vue app calls `/api/...`, and nginx proxies to Flask on `127.0.0.1:5001`.
-
-Canonical config in the repo:
-
-```text
-deploy/nginx/stat-ml-fit.scads.ai.conf
-```
-
-Install on the VM (from the project checkout):
-
-```bash
-cd /var/www/actions-runner/_work/mlfit/mlfit
+cd /opt/stat-ml-fit
 sudo bash scripts/install-nginx-config.sh
 ```
 
-Or copy manually:
+Manual equivalent:
 
 ```bash
 sudo cp deploy/nginx/stat-ml-fit.scads.ai.conf /etc/nginx/sites-available/stat-ml-fit.scads.ai
@@ -246,30 +161,133 @@ curl -s https://stat-ml-fit.scads.ai/api/jobs/test-job-id | head
 curl -s http://127.0.0.1:5001/jobs/test-job-id | head
 ```
 
-Keep Flask listening on **5001** (Docker `5001:5000` or `flask run --port=5001`). The frontend build sets `VITE_API_BASE=/api` in CI (see `deploy.yml`).
+---
 
-## 10. Rollback
+## Docker (API only)
 
-If the new deployment fails:
-
-```bash
-cd /var/www/actions-runner/_work/mlfit/mlfit
-docker compose logs --tail=200 web
-docker compose down
-```
-
-Restore the most recent backup to a temporary folder:
+From `/opt/stat-ml-fit`:
 
 ```bash
-mkdir -p /var/www/restore/mlfit
-tar -xzf /var/www/backups/mlfit/<backup-file>.tar.gz -C /var/www/restore/mlfit
+docker compose -f docker-compose.yaml up -d --build
+docker compose -f docker-compose.yaml ps
+docker compose -f docker-compose.yaml logs --tail=100 web
 ```
 
-Then either fix the current checkout and rebuild, or replace the checkout from the backup after confirming what changed.
+Check port and health:
 
-## 11. Routine Maintenance
+```bash
+sudo ss -ltnp | grep ':5001' || true
+curl -I http://127.0.0.1:5001/
+```
 
-Use these periodically to keep the VM healthy:
+On Debian, if `docker compose` is missing, bootstrap installs a Compose plugin; legacy `docker-compose` also works via `scripts/lib/compose.sh`.
+
+---
+
+## GitHub Actions
+
+Workflow: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
+
+Triggers on push to `main` or `master` (after tests pass).
+
+### Option A — Self-hosted runner (typical)
+
+Runner builds on the VM; output is synced to `DEPLOY_DIST` (default `/opt/stat-ml-fit/frontend/dist`).
+
+Repository variables (optional):
+
+| Variable | Default |
+|----------|---------|
+| `SSH_HOST` | `141.76.17.229` |
+| `SSH_USER` | `gg1991` |
+| `DEPLOY_ROOT` | `/opt/stat-ml-fit` |
+| `DEPLOY_DIST` | `/opt/stat-ml-fit/frontend/dist` |
+
+Register the runner against:
+
+```text
+https://github.com/mlfitscadsai/Stat-ML-Fit
+```
+
+(Settings → Actions → Runners → New self-hosted runner)
+
+### Option B — SSH deploy from GitHub cloud
+
+Repository secrets:
+
+| Secret | Purpose |
+|--------|---------|
+| `SSH_PRIVATE_KEY` | PEM key for `gg1991@141.76.17.229` |
+| `SSH_HOST` | Optional override |
+| `SSH_USER` | Optional override |
+
+Run workflow **Deploy to ML Fit VM** with **deploy_via_ssh** = `true`.
+
+Set variable `FORCE_SSH_DEPLOY=true` to always use SSH deploy on push.
+
+### Workflow inputs (manual run)
+
+| Input | Purpose |
+|-------|---------|
+| `deploy_via_ssh` | Build on GitHub, rsync to VM |
+| `update_nginx` | Install nginx site config |
+| `update_backend` | `docker compose up` in `DEPLOY_ROOT` (needs `docker-compose.prod.yaml`) |
+
+---
+
+## Migrating from the old layout
+
+If the VM still uses the legacy GitHub Actions path:
+
+```text
+/var/www/actions-runner/_work/mlfit/mlfit
+```
+
+or the old repo `PurebyteAI/Stat-ML-Fit-v2.0` / branch `vjs3`:
+
+1. Run `vm-bootstrap.sh` to install under `/opt/stat-ml-fit`, **or**
+2. Manually repoint git:
+
+```bash
+cd /opt/stat-ml-fit   # or your existing checkout
+git remote set-url origin https://github.com/mlfitscadsai/Stat-ML-Fit.git
+git fetch origin
+git checkout main
+git pull --ff-only origin main
+COMPOSE_FILE=docker-compose.yaml bash scripts/vm-deploy.sh
+```
+
+Update the self-hosted runner registration to `mlfitscadsai/Stat-ML-Fit` and set `DEPLOY_ROOT` / `DEPLOY_DIST` to `/opt/stat-ml-fit` paths.
+
+---
+
+## Backup and rollback
+
+Lightweight backup before major changes:
+
+```bash
+cd /opt/stat-ml-fit
+mkdir -p /var/www/backups/stat-ml-fit
+tar --exclude='frontend/node_modules' \
+    --exclude='frontend/dist' \
+    --exclude='frontend/coverage' \
+    --exclude='.git' \
+    -czf "/var/www/backups/stat-ml-fit/stat-ml-fit-$(date +%Y%m%d-%H%M%S).tar.gz" .
+```
+
+Rollback: extract backup to a temp directory, compare, restore files or redeploy from a known good `main` commit:
+
+```bash
+cd /opt/stat-ml-fit
+git fetch origin
+git checkout main
+git reset --hard origin/main   # only if you accept losing local VM edits
+COMPOSE_FILE=docker-compose.yaml bash scripts/vm-deploy.sh
+```
+
+---
+
+## Maintenance
 
 ```bash
 df -h
@@ -280,99 +298,38 @@ sudo journalctl --vacuum-time=14d
 sudo apt-get clean
 ```
 
-Avoid deleting the GitHub Actions runner `_work` directory while a runner job is active.
+Before deleting large trees under `/opt/stat-ml-fit`, do not remove `backend/files` unless you intend to drop uploaded datasets.
 
-## 12. GitHub Actions CI/CD (nginx, no Docker)
-
-Workflow: `.github/workflows/deploy.yml`
-
-Nginx on the VM serves static files from:
-
-```text
-/var/www/actions-runner/_work/mlfit/mlfit/frontend/dist
-```
-
-### Option A — Self-hosted runner (recommended)
-
-This matches your current layout (`actions-runner/_work/mlfit/mlfit`).
-
-On the VM (`gg1991@141.76.17.229`):
+Free disk before rebuilds:
 
 ```bash
-# One-time: install GitHub Actions runner (if not already present)
-mkdir -p ~/actions-runner && cd ~/actions-runner
-# Download the runner package from your GitHub repo: Settings → Actions → Runners → New self-hosted runner
-./config.sh --url https://github.com/<ORG>/<REPO> --token <RUNNER_TOKEN>
-sudo ./svc.sh install
-sudo ./svc.sh start
+cd /opt/stat-ml-fit
+rm -rf frontend/node_modules frontend/dist frontend/coverage
 ```
 
-Ensure the runner user can reload nginx without a password prompt, or skip reload and reload manually:
+---
 
-```bash
-sudo visudo
-# gg1991 ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx
-```
+## Deployment checklist
 
-**Automatic deploy:** push to `main` or `master` → workflow runs tests, `npm run build` on the runner, output lands in `frontend/dist` (same path nginx uses).
+- [ ] SSH: `gg1991@141.76.17.229`
+- [ ] App at `/opt/stat-ml-fit`, remote `mlfitscadsai/Stat-ML-Fit`, branch `main`
+- [ ] `frontend/dist/index.html` present after build
+- [ ] Flask reachable on `127.0.0.1:5001`
+- [ ] Nginx: `sudo nginx -t && sudo systemctl reload nginx`
+- [ ] `.env` configured if using HPC features
+- [ ] https://stat-ml-fit.scads.ai/ loads
+- [ ] API: `curl https://stat-ml-fit.scads.ai/api/...` or `curl http://127.0.0.1:5001/...`
 
-**Manual deploy from GitHub:** Actions → “Deploy to ML Fit VM” → Run workflow.
+---
 
-### Option B — SSH deploy from GitHub cloud runners
+## Scripts reference
 
-Use this if you do not use a self-hosted runner. Add repository secrets:
+| Script | Use |
+|--------|-----|
+| `scripts/vm-bootstrap.sh` | One-time VM setup + first deploy |
+| `scripts/vm-deploy.sh` | Pull, build, Docker, nginx on VM |
+| `scripts/deploy-from-laptop.sh` | Local build + rsync + remote reload |
+| `scripts/install-nginx-config.sh` | Install nginx site (sudo) |
+| `scripts/lib/compose.sh` | `compose` helper + `ensure_docker_compose` |
 
-| Secret | Example |
-|--------|---------|
-| `SSH_HOST` | `141.76.17.229` |
-| `SSH_USER` | `gg1991` |
-| `SSH_PRIVATE_KEY` | Private key (PEM), no passphrase preferred |
-
-Optional:
-
-| Secret / Variable | Purpose |
-|-------------------|---------|
-| `VITE_API_BASE` | API base for production build (default `/api` — same-origin via nginx) |
-| Variable `FORCE_SSH_DEPLOY` | Set to `true` to always use SSH deploy |
-
-Run workflow with input **deploy_via_ssh** = `true`.
-
-### Option C — Manual deploy from your laptop
-
-```bash
-chmod +x scripts/deploy-vm.sh
-VITE_API_BASE=/api ./scripts/deploy-vm.sh
-```
-
-Requires SSH key login to `gg1991@141.76.17.229` and write access to `frontend/dist` on the VM.
-
-### Backend (Flask on port 5001)
-
-The deploy workflow updates the **frontend** and can install `deploy/nginx/stat-ml-fit.scads.ai.conf`. The SPA calls `/api/...` (proxied to Flask on port 5001).
-
-Keep Flask running separately on the VM (Docker or systemd), for example:
-
-```bash
-cd /var/www/actions-runner/_work/mlfit/mlfit
-docker compose up -d --build
-# or: flask run --host=0.0.0.0 --port=5001
-```
-
-Verify after deploy:
-
-```bash
-curl -I https://stat-ml-fit.scads.ai/
-curl -I http://127.0.0.1:5001/
-```
-
-## 13. Deployment Checklist
-
-- [ ] SSH into `gg1991@141.76.17.229`
-- [ ] Confirm project path: `/var/www/actions-runner/_work/mlfit/mlfit`
-- [ ] Self-hosted runner online (Option A) or SSH secrets set (Option B)
-- [ ] Push to `main` / `master` or run “Deploy to ML Fit VM” workflow
-- [ ] Confirm `frontend/dist/index.html` exists on VM
-- [ ] `sudo nginx -t && sudo systemctl reload nginx`
-- [ ] Confirm `.env` / Flask backend if using HPC features
-- [ ] Verify `https://stat-ml-fit.scads.ai/`
-- [ ] Verify API: `http://141.76.17.229:5001/` (or your `VITE_API_BASE`)
+Shell scripts use LF line endings (see `.gitattributes`).
