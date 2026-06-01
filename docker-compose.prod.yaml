@@ -1,0 +1,19 @@
+# Production: Flask API in Docker, nginx serves frontend/dist on the host.
+# Usage: docker compose -f docker-compose.prod.yaml up -d --build
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: stat-ml-fit-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5001:5000"
+    env_file:
+      - .env
+    volumes:
+      - backend-files:/app/backend/files
+
+volumes:
+  backend-files:

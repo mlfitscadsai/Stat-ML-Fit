@@ -1,0 +1,24 @@
+# Backend API only — frontend is built on the host and served by nginx.
+FROM continuumio/miniconda3
+
+RUN conda install -y -c conda-forge r-base && conda clean -afy
+
+WORKDIR /app
+
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN python3 -c "\
+raw = open('backend/requirements.txt','rb').read(); \
+text = raw.decode('utf-16') if raw[:2] in (b'\xff\xfe', b'\xfe\xff') else raw.replace(b'\x00',b'').decode('utf-8','ignore'); \
+open('/tmp/req.txt','w').write(text)" \
+  && pip install --no-cache-dir -r /tmp/req.txt
+
+COPY backend/ ./backend/
+
+RUN mkdir -p /app/backend/files
+
+ENV FLASK_APP=backend/app.py
+ENV FLASK_ENV=production
+
+EXPOSE 5000
+
+CMD ["flask", "run", "--host=0.0.0.0"]
