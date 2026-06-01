@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # One-time fresh VM setup for Stat-ML-Fit (Debian).
 # Run as gg1991 on a clean VM:
-#   curl -fsSL .../vm-bootstrap.sh | bash   OR   bash scripts/vm-bootstrap.sh
+#   curl -fsSL https://raw.githubusercontent.com/mlfitscadsai/Stat-ML-Fit/main/scripts/vm-bootstrap.sh | bash
+#   OR   bash scripts/vm-bootstrap.sh
 #
 # What it does:
 #   1. Installs Docker, Node.js 22, git
-#   2. Clones PurebyteAI/Stat-ML-Fit-v2.0 → /opt/stat-ml-fit
+#   2. Clones mlfitscadsai/Stat-ML-Fit → /opt/stat-ml-fit
 #   3. Builds frontend, starts Docker API, configures nginx
 #
 # Optional env:
 #   GITHUB_TOKEN=ghp_xxx     for private repo clone
-#   GIT_BRANCH=vjs3
+#   GIT_BRANCH=main
 #   APP_ROOT=/opt/stat-ml-fit
 #   SKIP_CLONE=1             if repo already cloned
 
@@ -21,8 +22,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/compose.sh"
 
 APP_ROOT="${APP_ROOT:-/opt/stat-ml-fit}"
-GIT_BRANCH="${GIT_BRANCH:-vjs3}"
-REPO="${REPO:-https://github.com/PurebyteAI/Stat-ML-Fit-v2.0.git}"
+GIT_BRANCH="${GIT_BRANCH:-main}"
+REPO="${REPO:-https://github.com/mlfitscadsai/Stat-ML-Fit.git}"
 
 if [[ "$(id -u)" -eq 0 ]]; then
   echo "Run as gg1991, not root." >&2
@@ -62,7 +63,12 @@ if [[ "${SKIP_CLONE:-0}" != "1" ]]; then
   fi
 
   if [[ -d "${APP_ROOT}/.git" ]]; then
-    echo "==> Repo exists at ${APP_ROOT}, pulling"
+    echo "==> Repo exists at ${APP_ROOT}, updating from ${REPO}"
+    git -C "${APP_ROOT}" remote set-url origin "${CLONE_URL}"
+    git -C "${APP_ROOT}" fetch origin
+    git -C "${APP_ROOT}" checkout "${GIT_BRANCH}" 2>/dev/null || \
+      git -C "${APP_ROOT}" checkout -B "${GIT_BRANCH}" "origin/${GIT_BRANCH}"
+    git -C "${APP_ROOT}" pull --ff-only origin "${GIT_BRANCH}"
   else
     echo "==> Cloning ${REPO} → ${APP_ROOT}"
     git clone --branch "${GIT_BRANCH}" --single-branch "${CLONE_URL}" "${APP_ROOT}"

@@ -16,7 +16,6 @@ name: Deploy to ML Fit VM
 on:
   push:
     branches:
-      - vjs3
       - main
       - master
   workflow_dispatch:

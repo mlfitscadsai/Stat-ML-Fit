@@ -1,6 +1,6 @@
 # Project Issue Report — Stat-ML-Fit v2.0
 
-**Branch:** `vjs3`
+**Branch:** `main`
 **Date:** 2026-03-04
 **Reviewed by:** Code Review Audit
 

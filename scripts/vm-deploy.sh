@@ -4,7 +4,7 @@
 #   cd /opt/stat-ml-fit && bash scripts/vm-deploy.sh
 #
 # Optional env:
-#   GIT_BRANCH=vjs3
+#   GIT_BRANCH=main
 #   SKIP_GIT=1
 #   SKIP_DOCKER=1
 #   SKIP_NGINX=1
@@ -17,7 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/compose.sh"
 
 APP_ROOT="${APP_ROOT:-/opt/stat-ml-fit}"
-GIT_BRANCH="${GIT_BRANCH:-vjs3}"
+GIT_BRANCH="${GIT_BRANCH:-main}"
 VITE_API_BASE="${VITE_API_BASE:-/api}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yaml}"
 

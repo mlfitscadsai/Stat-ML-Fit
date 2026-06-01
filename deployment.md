@@ -314,7 +314,7 @@ sudo visudo
 # gg1991 ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx
 ```
 
-**Automatic deploy:** push to `vjs3`, `main`, or `master` → workflow runs tests, `npm run build` on the runner, output lands in `frontend/dist` (same path nginx uses).
+**Automatic deploy:** push to `main` or `master` → workflow runs tests, `npm run build` on the runner, output lands in `frontend/dist` (same path nginx uses).
 
 **Manual deploy from GitHub:** Actions → “Deploy to ML Fit VM” → Run workflow.
 
@@ -370,7 +370,7 @@ curl -I http://127.0.0.1:5001/
 - [ ] SSH into `gg1991@141.76.17.229`
 - [ ] Confirm project path: `/var/www/actions-runner/_work/mlfit/mlfit`
 - [ ] Self-hosted runner online (Option A) or SSH secrets set (Option B)
-- [ ] Push to `vjs3` / `main` / `master` or run “Deploy to ML Fit VM” workflow
+- [ ] Push to `main` / `master` or run “Deploy to ML Fit VM” workflow
 - [ ] Confirm `frontend/dist/index.html` exists on VM
 - [ ] `sudo nginx -t && sudo systemctl reload nginx`
 - [ ] Confirm `.env` / Flask backend if using HPC features
