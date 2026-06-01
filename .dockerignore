@@ -1,0 +1,14 @@
+# When build context is repo root (legacy), keep the daemon from sending gigabytes.
+.git
+.github
+doc
+frontend
+node_modules
+**/__pycache__
+*.pyc
+.env
+.env.*
+*.md
+frontend/dist
+frontend/node_modules
+frontend/coverage

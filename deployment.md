@@ -91,11 +91,16 @@ bash scripts/vm-deploy.sh
 | `SKIP_DOCKER=1` | Skip Docker rebuild |
 | `SKIP_NGINX=1` | Skip nginx config install |
 
-**Compose file:** scripts default to `docker-compose.prod.yaml`. The repo currently ships `docker-compose.yaml` for the API. Until a prod compose file is added, run:
+**Compose file:** `docker-compose.prod.yaml` builds only `backend/` (~few MB context, slim Python image — no conda/R).
+
+If a previous deploy filled the disk with failed conda layers, on the VM run:
 
 ```bash
-COMPOSE_FILE=docker-compose.yaml bash scripts/vm-deploy.sh
+docker system prune -af
+df -h
 ```
+
+Then redeploy: `bash scripts/vm-deploy.sh`
 
 ---
 
@@ -165,13 +170,15 @@ curl -s http://127.0.0.1:5001/jobs/test-job-id | head
 
 ## Docker (API only)
 
-From `/opt/stat-ml-fit`:
+From `/opt/stat-ml-fit` (production API):
 
 ```bash
-docker compose -f docker-compose.yaml up -d --build
-docker compose -f docker-compose.yaml ps
-docker compose -f docker-compose.yaml logs --tail=100 web
+docker compose -f docker-compose.prod.yaml up -d --build
+docker compose -f docker-compose.prod.yaml ps
+docker compose -f docker-compose.prod.yaml logs --tail=100 api
 ```
+
+Local all-in-one dev image (includes frontend build + conda) uses `docker-compose.yaml` at the repo root — not used on the VM.
 
 Check port and health:
 
@@ -254,7 +261,7 @@ git remote set-url origin https://github.com/mlfitscadsai/Stat-ML-Fit.git
 git fetch origin
 git checkout main
 git pull --ff-only origin main
-COMPOSE_FILE=docker-compose.yaml bash scripts/vm-deploy.sh
+bash scripts/vm-deploy.sh
 ```
 
 Update the self-hosted runner registration to `mlfitscadsai/Stat-ML-Fit` and set `DEPLOY_ROOT` / `DEPLOY_DIST` to `/opt/stat-ml-fit` paths.
@@ -282,7 +289,7 @@ cd /opt/stat-ml-fit
 git fetch origin
 git checkout main
 git reset --hard origin/main   # only if you accept losing local VM edits
-COMPOSE_FILE=docker-compose.yaml bash scripts/vm-deploy.sh
+bash scripts/vm-deploy.sh
 ```
 
 ---

@@ -22,7 +22,8 @@ npm run build
 echo "==> Syncing dist + config to VM"
 rsync -avz --delete dist/ "${SSH_TARGET}:${APP_ROOT}/frontend/dist/"
 rsync -avz deploy/nginx/stat-ml-fit.scads.ai.conf "${SSH_TARGET}:${APP_ROOT}/deploy/nginx/"
-rsync -avz docker-compose.prod.yaml Dockerfile.api "${SSH_TARGET}:${APP_ROOT}/"
+rsync -avz docker-compose.prod.yaml "${SSH_TARGET}:${APP_ROOT}/"
+rsync -avz backend/Dockerfile backend/requirements.txt "${SSH_TARGET}:${APP_ROOT}/backend/"
 
 echo "==> Remote: nginx + docker"
 ssh "${SSH_TARGET}" "cd '${APP_ROOT}' && sudo bash scripts/install-nginx-config.sh && bash -c 'source scripts/lib/compose.sh && compose -f docker-compose.prod.yaml up -d --build'"

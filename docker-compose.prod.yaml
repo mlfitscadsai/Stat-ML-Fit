@@ -4,8 +4,8 @@
 services:
   api:
     build:
-      context: .
-      dockerfile: Dockerfile.api
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: stat-ml-fit-api
     restart: unless-stopped
     ports:
