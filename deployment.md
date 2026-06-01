@@ -128,16 +128,28 @@ cp /opt/stat-ml-fit/deploy/env.example /opt/stat-ml-fit/.env
 nano /opt/stat-ml-fit/.env
 ```
 
-Example:
+Example (uncomment and fill in for HPC job submission):
 
 ```dotenv
 FLASK_ENV=production
-HPC_HOST=your-hpc-host.example.edu
-HPC_USER=your-hpc-user
-HPC_PASSWORD=your-hpc-password
+HPC_HOST=hpc.example.tu-dresden.de
+HPC_USER=your_username
+HPC_PASSWORD=your_password
 ```
 
-Keep `.env` only on the server. Wire it into Docker via `env_file` in your compose file when you add production compose settings.
+The UI works without HPC (browser-side ML). If these variables are missing, `/run` and related routes return **503** with a JSON error instead of crashing the container.
+
+After editing `.env`:
+
+```bash
+cd /opt/stat-ml-fit
+docker compose -f docker-compose.prod.yaml up -d --build
+curl -s http://127.0.0.1:5001/health | python3 -m json.tool
+```
+
+`hpc_configured: true` means SSH settings are present (not that the cluster is reachable).
+
+Keep `.env` only on the server. It is loaded via `env_file` in `docker-compose.prod.yaml`.
 
 ---
 

@@ -2,9 +2,15 @@ from helpers.ssh_client import get_ssh_client
 from helpers.commnad_write import CommandWriter
 
 def test_get_ssh_client(mocker):
+    mocker.patch.dict(
+        'os.environ',
+        {'HPC_HOST': 'hpc.example.edu', 'HPC_USER': 'user', 'HPC_PASSWORD': 'secret'},
+        clear=False,
+    )
+    mocker.patch('helpers.ssh_client.socket.getaddrinfo', return_value=[(2, 1, 6, '', ('1.2.3.4', 22))])
     mock_ssh = mocker.patch('paramiko.SSHClient')
     mock_instance = mock_ssh.return_value
-    
+
     client = get_ssh_client()
     
     assert client == mock_instance

@@ -64,8 +64,8 @@ fi
 
 echo "==> Smoke checks"
 test -f frontend/dist/index.html
-curl -fsS -o /dev/null -w "API :5001 → HTTP %{http_code}\n" http://127.0.0.1:5001/ || \
-  echo "WARN: API not reachable on :5001"
+curl -fsS -o /dev/null -w "API health → HTTP %{http_code}\n" http://127.0.0.1:5001/health || \
+  echo "WARN: API not reachable on :5001/health"
 curl -fsS -o /dev/null -w "HTTPS site → HTTP %{http_code}\n" https://stat-ml-fit.scads.ai/ || \
   echo "WARN: HTTPS check failed"
 

@@ -1,4 +1,5 @@
 import os
+import socket
 
 import paramiko
 
@@ -11,10 +12,44 @@ except ImportError:
     HPC_USER = os.environ.get("HPC_USER", "")
 
 
+class HpcNotConfiguredError(RuntimeError):
+    """Raised when HPC SSH settings are missing or invalid."""
+
+
+def hpc_settings():
+    host = (os.environ.get("HPC_HOST") or HPC_HOST or "").strip()
+    user = (os.environ.get("HPC_USER") or HPC_USER or "").strip()
+    password = os.environ.get("HPC_PASSWORD") or HPC_PASSWORD or ""
+    return host, user, password
+
+
+def hpc_is_configured():
+    host, user, password = hpc_settings()
+    return bool(host and user and password)
+
+
 def get_ssh_client():
-    SSH_Client = paramiko.SSHClient()
-    SSH_Client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    SSH_Client.connect(hostname=HPC_HOST, port=22, username=HPC_USER,
-                       password=HPC_PASSWORD, look_for_keys=False
-                       )
-    return SSH_Client
+    host, user, password = hpc_settings()
+    if not host or not user or not password:
+        raise HpcNotConfiguredError(
+            "HPC is not configured. Set HPC_HOST, HPC_USER, and HPC_PASSWORD in /opt/stat-ml-fit/.env "
+            "and restart the API container."
+        )
+    try:
+        socket.getaddrinfo(host, 22, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise HpcNotConfiguredError(
+            f"HPC_HOST '{host}' is not reachable ({exc}). Fix .env and restart the API container."
+        ) from exc
+
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh_client.connect(
+        hostname=host,
+        port=22,
+        username=user,
+        password=password,
+        look_for_keys=False,
+        timeout=30,
+    )
+    return ssh_client

@@ -5,6 +5,23 @@ import pandas as pd
 import builtins
 import os
 import app
+from helpers.ssh_client import HpcNotConfiguredError
+
+
+def test_health(client):
+    response = client.get('/health')
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload['status'] == 'ok'
+    assert 'hpc_configured' in payload
+
+
+def test_run_without_hpc_returns_503(client, mocker):
+    mocker.patch('app.get_ssh_client', side_effect=HpcNotConfiguredError('not configured'))
+    response = client.get('/run?file_name=test.csv&job_id=2025')
+    assert response.status_code == 503
+    assert response.get_json()['hpc_configured'] is False
+
 
 def test_upload_success(client, mocker):
     mocker.patch('app.os.path.join', return_value='files/test.csv')

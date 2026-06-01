@@ -9,10 +9,24 @@ import pandas as pd
 import paramiko
 from werkzeug.utils import secure_filename
 
-from helpers.ssh_client import get_ssh_client
+from helpers.ssh_client import (
+    HpcNotConfiguredError,
+    get_ssh_client,
+    hpc_is_configured,
+    hpc_settings,
+)
 from helpers.commnad_write import CommandWriter
 
 app = Flask(__name__)
+
+
+@app.errorhandler(HpcNotConfiguredError)
+def hpc_not_configured(error):
+    return jsonify({
+        "status": "unavailable",
+        "error": str(error),
+        "hpc_configured": False,
+    }), 503
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 ALLOWED_EXTENSIONS = {'csv'}
@@ -30,6 +44,17 @@ def remote_dir_exists(sftp, path):
         return True
     except FileNotFoundError:
         return False
+
+
+@app.route('/health', methods=['GET', 'HEAD'])
+def health():
+    host, user, _password = hpc_settings()
+    return jsonify({
+        "status": "ok",
+        "hpc_configured": hpc_is_configured(),
+        "hpc_host": host if host else None,
+        "hpc_user": user if user else None,
+    })
 
 
 @app.route('/missforest', endpoint='imputation', methods=['POST'])
