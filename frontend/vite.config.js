@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import { analyzer } from 'vite-bundle-analyzer'
-import { manualChunkFor } from './vite/chunks.js'
+import { manualChunkFor, DEFERRED_PRELOAD_CHUNKS } from './vite/chunks.js'
 
 // In CI/Docker, disable analyzer (no xdg-open) or use static mode without opening browser
 const isCI = process.env.CI === 'true' || process.env.DOCKER_BUILD === 'true'
@@ -37,6 +37,13 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         emptyOutDir: true,
+        modulePreload: {
+            resolveDependencies(_filename, deps) {
+                return deps.filter((dep) =>
+                    !DEFERRED_PRELOAD_CHUNKS.some((name) => dep.includes(name))
+                );
+            },
+        },
         rollupOptions: {
             output: {
                 manualChunks: manualChunkFor,

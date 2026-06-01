@@ -1,11 +1,23 @@
 let danfoPromise = null;
-let plotlyPromise = null
+let plotlyPromise = null;
+
+async function ensureTensorflowBackends() {
+    await import('@tensorflow/tfjs');
+    await import('@tensorflow/tfjs-backend-cpu');
+    await import('@tensorflow/tfjs-backend-webgl');
+}
+
 export const getDanfo = async () => {
     if (!danfoPromise) {
-        danfoPromise = import('danfojs/dist/danfojs-browser/src/index')
+        danfoPromise = (async () => {
+            await ensureTensorflowBackends();
+            const mod = await import('danfojs/dist/danfojs-browser/src/index');
+            return mod.default ?? mod;
+        })();
     }
-    return danfoPromise
-}
+    return danfoPromise;
+};
+
 export const getPlotly = async () => {
     if (!plotlyPromise) {
         plotlyPromise = await import('danfojs/node_modules/plotly.js-dist-min');
@@ -15,22 +27,18 @@ export const getPlotly = async () => {
             displaylogo: false,
             modeBarButtonsToRemove: ['resetScale2d', 'zoom2d', 'pan', 'select2d', 'resetViews', 'sendDataToCloud', 'hoverCompareCartesian', 'lasso2d', 'drawopenpath '], // Remove certain buttons from the mode bar
         });
-        window.Plotly = plotlyPromise
+        window.Plotly = plotlyPromise;
     }
-    return plotlyPromise
-}
-let highChartPromise = null
+    return plotlyPromise;
+};
+
+let highChartPromise = null;
 export const highChartLoader = async () => {
     if (!highChartPromise) {
         highChartPromise = import('highcharts').then((module) => {
             window.Highcharts = module.default;
-            // Return the heatmap import promise to ensure it completes
             return import('highcharts/modules/heatmap');
-        }).then(() => {
-            // Now both are definitely loaded
-            return window.Highcharts;
-        });
-
+        }).then(() => window.Highcharts);
     }
-    return highChartPromise
-}
+    return highChartPromise;
+};

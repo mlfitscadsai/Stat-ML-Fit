@@ -1,7 +1,8 @@
 const CHUNK_RULES = [
     { chunk: 'assistant-gemma', match: ['@huggingface/transformers', '@kessler/gemma-agent', 'onnxruntime'] },
-    // Keep danfojs + tensorflow in one chunk (splitting causes TDZ/circular init errors).
-    { chunk: 'ml-tensorflow', match: ['@tensorflow', 'danfojs', 'scikitjs'] },
+    // Keep @tensorflow separate from danfojs — one mega-chunk causes TDZ init errors (IB/MR).
+    { chunk: 'ml-tensorflow', match: ['@tensorflow'] },
+    { chunk: 'ml-danfo', match: ['danfojs'] },
     { chunk: 'viz-plotly', match: ['plotly.js'] },
     { chunk: 'viz-highcharts', match: ['highcharts'] },
     { chunk: 'vendor-vue', match: ['vue', 'pinia', 'buefy', 'bulma'] },
@@ -15,3 +16,6 @@ export function manualChunkFor(id = '') {
     );
     return rule?.chunk || 'vendor';
 }
+
+/** Chunks that must not be modulepreloaded from index.html (load on demand). */
+export const DEFERRED_PRELOAD_CHUNKS = ['ml-tensorflow', 'ml-danfo'];

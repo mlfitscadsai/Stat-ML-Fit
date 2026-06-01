@@ -648,7 +648,6 @@
 import { ChartController } from '@/helpers/charts';
 import { settingStore } from '@/stores/settings'
 import { getPlotly, getDanfo } from '@/utils/danfo_loader';
-import Autoencoder from '@/helpers/dimensionality-reduction/autoencoder';
 import UMAPReducer from '@/helpers/dimensionality-reduction/umap';
 import { getGraphPalette, getPlotlyAxisDefaults, mergePlotlyLayout } from '@/helpers/chart-theme';
 
@@ -1229,6 +1228,7 @@ export default {
                 this.aeInputDim = valuesArray[0].length;
                 const totalEpochs = Math.max(1, Number(this.iterations) || 150);
 
+                const { default: Autoencoder } = await import('@/helpers/dimensionality-reduction/autoencoder');
                 const autoencoder = new Autoencoder();
                 const result = await autoencoder.predict(
                     valuesArray,
