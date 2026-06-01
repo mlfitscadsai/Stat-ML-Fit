@@ -216,8 +216,18 @@ Check port and health:
 
 ```bash
 sudo ss -ltnp | grep ':5001' || true
-curl -I http://127.0.0.1:5001/
+curl -s http://127.0.0.1:5001/health | python3 -m json.tool
+curl -s https://stat-ml-fit.scads.ai/api/health | python3 -m json.tool
 ```
+
+If deploy prints `connection reset` on `:5001/health` but the container is `Up`, the API is usually still starting (heavy Python deps) or using an old `flask run` image — pull latest, rebuild, and wait up to ~2 minutes:
+
+```bash
+cd /opt/stat-ml-fit && git pull && docker compose -f docker-compose.prod.yaml up -d --build
+docker compose -f docker-compose.prod.yaml logs -f api
+```
+
+Do **not** set `FLASK_RUN_PORT=5001` in `.env` (host maps `5001→5000` inside the container).
 
 On Debian, if `docker compose` is missing, bootstrap installs a Compose plugin; legacy `docker-compose` also works via `scripts/lib/compose.sh`.
 

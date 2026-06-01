@@ -16,7 +16,10 @@ RUN mkdir -p files
 
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
+ENV FLASK_RUN_HOST=0.0.0.0
+ENV FLASK_RUN_PORT=5000
 
 EXPOSE 5000
 
-CMD ["flask", "run", "--host=0.0.0.0"]
+# gunicorn stays up during heavy ML imports; flask run is not production-safe
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "300", "app:app"]

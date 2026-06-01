@@ -2,10 +2,7 @@ import io
 import os
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS, cross_origin
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from missforest.missforest import MissForest
 import json
-import pandas as pd
 import paramiko
 from werkzeug.utils import secure_filename
 
@@ -59,6 +56,10 @@ def health():
 
 @app.route('/missforest', endpoint='imputation', methods=['POST'])
 def hello_world():
+    import pandas as pd
+    from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+    from missforest.missforest import MissForest
+
     content = request.get_json()
     clf = RandomForestClassifier(n_jobs=-1)
     rgr = RandomForestRegressor(n_jobs=-1)

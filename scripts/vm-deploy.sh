@@ -53,7 +53,12 @@ fi
 
 if [[ "${SKIP_DOCKER:-0}" != "1" ]]; then
   echo "==> Starting API container"
-  compose -f "${COMPOSE_FILE}" up -d --build
+  if compose -f "${COMPOSE_FILE}" up -d --build --wait 2>/dev/null; then
+    :
+  else
+    compose -f "${COMPOSE_FILE}" up -d --build
+    wait_for_api_health || echo "WARN: API health check timed out (see logs above)"
+  fi
   compose -f "${COMPOSE_FILE}" ps
 fi
 
@@ -64,9 +69,14 @@ fi
 
 echo "==> Smoke checks"
 test -f frontend/dist/index.html
-curl -fsS -o /dev/null -w "API health → HTTP %{http_code}\n" http://127.0.0.1:5001/health || \
-  echo "WARN: API not reachable on :5001/health"
-curl -fsS -o /dev/null -w "HTTPS site → HTTP %{http_code}\n" https://stat-ml-fit.scads.ai/ || \
-  echo "WARN: HTTPS check failed"
+if curl -fsS http://127.0.0.1:5001/health | python3 -m json.tool >/dev/null 2>&1; then
+  echo "API health → OK"
+else
+  echo "WARN: API not reachable on :5001/health (try: docker compose -f ${COMPOSE_FILE} logs --tail=80 api)"
+fi
+curl -fsS -o /dev/null -w "HTTPS SPA  → HTTP %{http_code}\n" https://stat-ml-fit.scads.ai/ || \
+  echo "WARN: HTTPS SPA check failed"
+curl -fsS -o /dev/null -w "HTTPS /api/health → HTTP %{http_code}\n" https://stat-ml-fit.scads.ai/api/health 2>/dev/null || \
+  echo "WARN: HTTPS API proxy check failed"
 
 echo "==> Deploy complete → https://stat-ml-fit.scads.ai/"

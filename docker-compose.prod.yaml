@@ -13,7 +13,19 @@ services:
     env_file:
       - .env
     volumes:
-      - backend-files:/app/backend/files
+      - backend-files:/app/files
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=5)",
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 120s
 
 volumes:
   backend-files:

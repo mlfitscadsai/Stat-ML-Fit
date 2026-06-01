@@ -107,11 +107,11 @@ def test_jobs_cancel_endpoint(client, mocker):
     mock_ssh.exec_command.assert_called_once_with('scancel 987')
 
 def test_imputation(client, mocker):
-    mock_mf = mocker.patch('app.MissForest')
+    mock_mf = mocker.patch('missforest.missforest.MissForest')
     mock_instance = mock_mf.return_value
     mock_instance.fit_transform.return_value = pd.DataFrame([{'a': 1, 'b': 2}])
-    mocker.patch('app.RandomForestClassifier')
-    mocker.patch('app.RandomForestRegressor')
+    mocker.patch('sklearn.ensemble.RandomForestClassifier')
+    mocker.patch('sklearn.ensemble.RandomForestRegressor')
     
     data = {
         'data': [{'a': 1, 'b': None}],

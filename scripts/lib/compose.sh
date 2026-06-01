@@ -49,3 +49,20 @@ ensure_docker_compose() {
   sudo chmod +x "${plugin_dir}/docker-compose"
   docker compose version >/dev/null 2>&1
 }
+
+# Wait until the host-mapped API health endpoint responds (after compose up).
+wait_for_api_health() {
+  local url="${1:-http://127.0.0.1:5001/health}"
+  local max_attempts="${2:-60}"
+  local i
+  for ((i = 1; i <= max_attempts; i++)); do
+    if curl -fsS -o /dev/null "$url" 2>/dev/null; then
+      echo "    API ready (${i}/${max_attempts} checks)"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "    API not ready after $((max_attempts * 2))s — last logs:" >&2
+  compose -f "${COMPOSE_FILE:-docker-compose.prod.yaml}" logs --tail=50 api >&2 || true
+  return 1
+}
