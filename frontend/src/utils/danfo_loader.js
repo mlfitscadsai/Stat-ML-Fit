@@ -1,9 +1,17 @@
 let danfoPromise = null;
 let plotlyPromise = null;
 
+function resolveDanfoModule(mod) {
+    if (mod?.dfd?.DataFrame) return mod.dfd;
+    if (mod?.default?.dfd?.DataFrame) return mod.default.dfd;
+    if (mod?.default?.DataFrame) return mod.default;
+    if (mod?.DataFrame) return mod;
+    throw new Error('Danfo.js failed to load (DataFrame export missing)');
+}
+
 export const getDanfo = async () => {
     if (!danfoPromise) {
-        danfoPromise = import('danfojs/dist/danfojs-browser/src/index').then((mod) => mod.default ?? mod);
+        danfoPromise = import('danfojs/lib/bundle.js').then(resolveDanfoModule);
     }
     return danfoPromise;
 };
@@ -11,7 +19,6 @@ export const getDanfo = async () => {
 export const getPlotly = async () => {
     if (!plotlyPromise) {
         plotlyPromise = await import('danfojs/node_modules/plotly.js-dist-min');
-        // eslint-disable-next-line no-undef
         plotlyPromise.setPlotConfig({
             autosize: true,
             displaylogo: false,

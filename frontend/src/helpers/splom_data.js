@@ -1,3 +1,5 @@
+import { dfColumn } from '@/utils/danfo_frame';
+
 /** Max numeric columns in SPLOM (Plotly grid cost grows as n²). */
 export const MAX_SPLOM_FEATURES = 10;
 /** Beyond this, skip target row/column (too many box/strip traces). */
@@ -98,7 +100,7 @@ export function prepareSplomInputs(dataframe, numericColumnNames, modelTarget, i
     let labelValues = null;
     if (targetOk) {
         try {
-            labelValues = slice.column(modelTarget).values;
+            labelValues = dfColumn(slice, modelTarget).values;
         } catch (e) {
             warnings.push('Could not read target column; drawing without target coloring.');
             labelValues = null;

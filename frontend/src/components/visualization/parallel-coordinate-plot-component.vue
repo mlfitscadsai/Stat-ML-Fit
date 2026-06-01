@@ -55,6 +55,7 @@ import { settingStore } from '@/stores/settings'
 import { ScaleOptions } from '@/helpers/settings'
 import { ChartController } from '@/helpers/charts';
 import { getDanfo, getPlotly } from '@/utils/danfo_loader';
+import { dfColumn } from '@/utils/danfo_frame';
 import { applyDataTransformation } from '@/helpers/utils';
 
 export default {
@@ -232,7 +233,7 @@ export default {
                 slice.dropNa({ axis: 0, inplace: true });
                 await this.chartController.parallelCoordinatePlot(
                     slice.loc({ columns: numericColumns }).values,
-                    slice.column(target).values,
+                    dfColumn(slice, target).values,
                     numericColumns,
                     this.settings.isClassification
                 )

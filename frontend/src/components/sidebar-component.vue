@@ -155,6 +155,7 @@ import { settingStore } from '@/stores/settings'
 import { applyDataTransformation, handle_missing_values, encode_dataset } from '@/helpers/utils';
 import { TASK_MODES, detectTaskFromTarget, resolveTaskMode, validateModeCompatibility } from '@/helpers/task_mode';
 import { getDanfo } from '@/utils/danfo_loader';
+import { dfColumn } from '@/utils/danfo_frame';
 import { BButton, BSelect, BField, BInput, BCheckbox, useToast } from 'buefy'
 
 import axios from "axios";
@@ -270,7 +271,7 @@ export default {
             const modeValidation = validateModeCompatibility(
                 this.taskMode,
                 targetFeature?.type,
-                this.dataframe?.column(this.modelTarget)?.values ?? []
+                this.dataframe ? dfColumn(this.dataframe, this.modelTarget)?.values ?? [] : []
             )
             if (!modeValidation.valid) {
                 this.Toast.open({
@@ -382,7 +383,7 @@ export default {
                 this.settings.addFeature(targetFeature)
             }
 
-            const targetValues = this.dataframe?.column(this.modelTarget)?.values ?? [];
+            const targetValues = this.dataframe ? dfColumn(this.dataframe, this.modelTarget)?.values ?? [] : [];
             const autoClassification = detectTaskFromTarget(targetFeature.type, targetValues);
             const selectedTaskMode = this.taskMode || TASK_MODES.AUTO;
             const isClassification = resolveTaskMode(selectedTaskMode, autoClassification);
@@ -419,6 +420,9 @@ export default {
         },
         async train() {
             try {
+                if (!this.settings.items?.length && this.settings.rawData?.length) {
+                    this.generateTargetDropdown();
+                }
                 if (!this.settings.rawData || this.settings.rawData.length === 0) {
                     this.Toast.open({
                         duration: 3000,
@@ -440,7 +444,7 @@ export default {
                 const modeValidation = validateModeCompatibility(
                     this.taskMode,
                     targetFeature?.type,
-                    this.dataframe?.column(this.modelTarget)?.values ?? []
+                    this.dataframe ? dfColumn(this.dataframe, this.modelTarget)?.values ?? [] : []
                 )
                 if (!modeValidation.valid) {
                     this.Toast.open({
@@ -519,7 +523,7 @@ export default {
                 }
 
 
-                const targets = filterd_dataset.column(target)
+                const targets = dfColumn(filterd_dataset, target)
                 filterd_dataset.drop({ columns: target, inplace: true })
 
 

@@ -2,6 +2,7 @@
 
 import { asyncRun } from "./py-worker";
 import { getDanfo } from '@/utils/danfo_loader';
+import { dfColumn } from '@/utils/danfo_frame';
 import { FeatureCategories } from '../helpers/settings'
 
 import * as Papa from 'papaparse';
@@ -302,7 +303,7 @@ export function evaluate_classification(predictions, y_test, encoder) {
 }
 export async function scale_data(dataset, column, normalization_type) {
     try {
-        const series = dataset.column(column);
+        const series = dfColumn(dataset, column);
         const transformed = transformColumnValues(series.values, normalization_type);
         dataset.addColumn(column, transformed, { inplace: true });
     } catch (error) {
@@ -397,7 +398,7 @@ export async function applyDataTransformation(dataset, column_names, transformat
     for (const column of column_names) {
         const transformation = transformations.find((item) => item.name === column);
         if (transformation) {
-            const series = dataset.column(column);
+            const series = dfColumn(dataset, column);
             const transformed = transformColumnValues(series.values, transformation.scaler);
             dataset.addColumn(column, transformed, { inplace: true });
         }
@@ -412,18 +413,18 @@ export function handle_missing_values(data_frame, impute = false) {
         let string_column_modes = []
         let numeric_column_means = []
         data_frame.columns.forEach((item) => {
-            if (data_frame.column(item)?.dtype === 'string') {
+            if (dfColumn(data_frame, item)?.dtype === 'string') {
                 string_columns.push(item)
             } else {
                 numeric_columns.push(item)
             }
         })
         string_columns.forEach(element => {
-            let mode = getCategoricalMode(data_frame.column(element).values).mode
+            let mode = getCategoricalMode(dfColumn(data_frame, element).values).mode
             string_column_modes.push(mode)
         });
         numeric_columns.forEach(element => {
-            let mean = data_frame.column(element).mean()
+            let mean = dfColumn(data_frame, element).mean()
             numeric_column_means.push(mean)
         });
         data_frame = data_frame.fillNa(string_column_modes, { columns: string_columns })
@@ -592,12 +593,12 @@ export function renderDatasetStats(data, continuousFeatures, categoricalFeatures
         const column = element.name;
         continuousFeaturesStats.push({
             name: column,
-            min: data.column(column).min().toFixed(2),
-            max: data.column(column).max().toFixed(2),
-            median: data.column(column).median().toFixed(2),
-            mean: data.column(column).mean().toFixed(2),
-            std: data.column(column).std().toFixed(2),
-            missingValuesCount: data.column(column).isNa().sum(),
+            min: dfColumn(data, column).min().toFixed(2),
+            max: dfColumn(data, column).max().toFixed(2),
+            median: dfColumn(data, column).median().toFixed(2),
+            mean: dfColumn(data, column).mean().toFixed(2),
+            std: dfColumn(data, column).std().toFixed(2),
+            missingValuesCount: dfColumn(data, column).isNa().sum(),
             type: 1,
             selected: element.selected
         })
@@ -606,14 +607,14 @@ export function renderDatasetStats(data, continuousFeatures, categoricalFeatures
 
     categoricalFeatures.forEach((item) => {
         let column = item.name
-        const shape = [...new Set(data.column(column).values)];
-        const category_info = getCategoricalMode(data.column(column).values)
+        const shape = [...new Set(dfColumn(data, column).values)];
+        const category_info = getCategoricalMode(dfColumn(data, column).values)
         categoricalFeaturesStats.push({
             name: column,
             shape: shape.length,
             mode: category_info['mode'],
             percentage: ((category_info[category_info['mode']] / category_info['total'])).toFixed(2),
-            missingValuesCount: data.column(column).isNa().sum(),
+            missingValuesCount: dfColumn(data, column).isNa().sum(),
             type: 2,
             selected: item.selected
         })

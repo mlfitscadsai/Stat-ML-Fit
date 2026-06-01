@@ -6,6 +6,7 @@ import { schemeTableau10, interpolateRainbow } from 'd3-scale-chromatic';
 import { FeatureCategories } from "./settings";
 import { metrics as ClassificationMetric, encode_name, scale_data, confusionMatrix } from './utils.js';
 import { getDanfo, getPlotly, highChartLoader } from '@/utils/danfo_loader';
+import { dfColumn } from '@/utils/danfo_frame';
 import { buildScatterplotMatrixTracesAndLayout } from '@/helpers/scatterplot_matrix_impl';
 import { labelKey } from '@/helpers/splom_data';
 import { getGraphPalette, getParcoordsFonts, getPlotlyAxisDefaults, mergePlotlyLayout } from '@/helpers/chart-theme';
@@ -512,10 +513,10 @@ export class ChartController {
         try {
 
 
-            let items = dataset.column(column).values;
+            let items = dfColumn(dataset, column).values;
             let default_bandwidth = this.nrd(items).toFixed(2);
             let raw_values = dataset.loc({ columns: [column, target_name] });
-            let uniqueLabels = [...new Set(raw_values.column(target_name).values)];
+            let uniqueLabels = [...new Set(dfColumn(raw_values, target_name).values)];
             if (uniqueLabels.length === 2) {
                 uniqueLabels.sort()
             }
@@ -617,7 +618,7 @@ export class ChartController {
                 current_class.draw_kde(data, column, target, newBandwidth, is_classification, true);
             });
             let container_id = key + '-kde-plot';
-            let items_range = [...raw_values.column(column).values]
+            let items_range = [...dfColumn(raw_values, column).values]
             // let minValue = Math.min(...items_range);
             // let maxValue = Math.max(...items_range);
             // items_range.push(minValue - parseFloat(default_bandwidth))

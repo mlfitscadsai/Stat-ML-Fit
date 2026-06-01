@@ -1341,5 +1341,7 @@ export default {
 }
 .mtw-error-banner i { color: #ef4444; font-size: 1rem; margin-top: 0.1rem; flex-shrink: 0; }
 .mtw-error-banner strong { display: block; font-weight: 700; margin-bottom: 0.15rem; }
-.mtw-error-detail { margin: 0; font-size: 0.78rem; color: #b91c1c; word-break: break-word; }
+.mtw-error-detail { margin: 0; font-size: 0.88rem; line-height: 1.45; color: #7f1d1d; word-break: break-word; }
+html.dark .mtw-error-banner { background: #3f1d1d; border-color: #7f1d1d; color: #fecaca; }
+html.dark .mtw-error-detail { color: #fecaca; }
 </style>

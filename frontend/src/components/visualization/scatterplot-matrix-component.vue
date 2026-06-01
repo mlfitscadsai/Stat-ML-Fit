@@ -210,6 +210,7 @@ import { transformColumnValues } from '@/helpers/utils';
 import { prepareSplomInputs } from '@/helpers/splom_data';
 import PCPComponent from '../visualization/parallel-coordinate-plot-component.vue'
 import { getDanfo, getPlotly } from '@/utils/danfo_loader';
+import { dfColumn } from '@/utils/danfo_frame';
 import { BSelect, BTable } from 'buefy';
 
 /** Rows threshold above which we surface a "plots may take a few seconds" hint. */
@@ -451,7 +452,7 @@ export default {
             const columns = df.columns.slice();
             const values = {};
             for (const col of columns) {
-                values[col] = df.column(col).values.slice();
+                values[col] = dfColumn(df, col).values.slice();
             }
             this._basePlotCache = { columns, values };
             this._basePlotCacheKey = key;
@@ -522,7 +523,7 @@ export default {
             }
             let targetValues;
             try {
-                targetValues = this.df.column(this.settings.modelTarget).values;
+                targetValues = dfColumn(this.df, this.settings.modelTarget).values;
             } catch {
                 this.classesInfo = [];
                 return;
@@ -645,9 +646,10 @@ export default {
                 this.selectedClasses.forEach((cls) => {
                     this.df.replace(cls.class, newClass, { columns: [this.settings.modelTarget], inplace: true });
                 });
-                this._basePlotCache.values[this.settings.modelTarget] = this.df
-                    .column(this.settings.modelTarget)
-                    .values.slice();
+                this._basePlotCache.values[this.settings.modelTarget] = dfColumn(
+                    this.df,
+                    this.settings.modelTarget
+                ).values.slice();
                 this.settings.setClassTransformation(this.selectedClasses);
                 const message = { message: 'merged classes: ' + newClass, type: 'info' };
                 this.$buefy.toast.open('merged classes: ' + newClass);

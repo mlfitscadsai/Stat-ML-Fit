@@ -226,10 +226,43 @@ aside.control-panel .control-subtitle,
 }
 .control-panel .checkbox,
 .control-panel .b-checkbox.checkbox span {
-  color: var(--sidebar-muted) !important;
+  color: var(--sidebar-ink) !important;
   font-size: 0.82rem !important;
   font-weight: 650 !important;
   opacity: 1 !important;
+}
+
+/* Sidebar uses a dark panel even when the app is in light mode — beat theme greens */
+html:not(.dark) aside.control-panel .label,
+html:not(.dark) aside.control-panel label,
+html:not(.dark) aside.control-panel .b-field .label,
+html:not(.dark) aside.control-panel .field > .label,
+html:not(.dark) .dashboard-sidebar.control-panel .label,
+html:not(.dark) aside.control-panel .checkbox,
+html:not(.dark) aside.control-panel .b-checkbox.checkbox,
+html:not(.dark) aside.control-panel .b-checkbox.checkbox span,
+html:not(.dark) aside.control-panel .radio,
+html.dark aside.control-panel .label,
+html.dark aside.control-panel .b-field .label,
+html.dark aside.control-panel .checkbox,
+html.dark aside.control-panel .b-checkbox.checkbox span {
+  color: var(--sidebar-ink) !important;
+}
+html:not(.dark) aside.control-panel .label,
+html:not(.dark) .dashboard-sidebar.control-panel .label,
+aside.control-panel .label,
+.dashboard-sidebar.control-panel .label {
+  color: #a8bdd4 !important;
+}
+aside.control-panel .sidebar-details__summary,
+aside.control-panel .sidebar-details__summary span,
+aside.control-panel .upload-panel__eyebrow,
+aside.control-panel .upload-option-row__label {
+  color: var(--sidebar-ink) !important;
+}
+aside.control-panel .upload-dropzone__hint,
+aside.control-panel .control-subtitle {
+  color: var(--sidebar-muted) !important;
 }
 
 /* ── MAIN CONTENT ── */
