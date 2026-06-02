@@ -123,14 +123,22 @@ html:not(.dark) h6 {
   opacity: 1 !important;
 }
 
-html:not(.dark) p,
-html:not(.dark) li,
-html:not(.dark) span,
-html:not(.dark) strong,
-html:not(.dark) em,
-html:not(.dark) label,
-html:not(.dark) .label,
-html:not(.dark) .help {
+html:not(.dark) .workspace-panel p,
+html:not(.dark) .workspace-panel li,
+html:not(.dark) .workspace-panel span,
+html:not(.dark) .workspace-panel strong,
+html:not(.dark) .workspace-panel em,
+html:not(.dark) .workspace-panel label,
+html:not(.dark) .workspace-panel .label,
+html:not(.dark) .workspace-panel .help,
+html:not(.dark) .dashboard-main p,
+html:not(.dark) .dashboard-main li,
+html:not(.dark) .dashboard-main span,
+html:not(.dark) .dashboard-main strong,
+html:not(.dark) .dashboard-main em,
+html:not(.dark) .dashboard-main label,
+html:not(.dark) .dashboard-main .label,
+html:not(.dark) .dashboard-main .help {
   color: #1f2937 !important;
   opacity: 1 !important;
 }
@@ -147,8 +155,10 @@ html:not(.dark) .tabs li.is-active a {
   font-weight: 700 !important;
 }
 
-html:not(.dark) .b-field .label,
-html:not(.dark) .field > .label {
+html:not(.dark) .workspace-panel .b-field .label,
+html:not(.dark) .workspace-panel .field > .label,
+html:not(.dark) .dashboard-main .b-field .label,
+html:not(.dark) .dashboard-main .field > .label {
   background-color: #ffffff !important;
   color: #111827 !important;
   font-weight: 600 !important;

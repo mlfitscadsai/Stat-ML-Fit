@@ -1344,6 +1344,64 @@ aside.control-panel .sidebar-details--advanced .checkbox {
   color: #fbbf24 !important;
 }
 
+/*
+ * Light app mode keeps a dark sidebar; global theme sheets must not paint
+ * dark-green / dark-grey text on this panel.
+ */
+html:not(.dark) aside.control-panel.dashboard-sidebar,
+html:not(.dark) .dashboard-sidebar.control-panel {
+  color: var(--sidebar-ink) !important;
+}
+
+html:not(.dark) aside.control-panel.dashboard-sidebar .sidebar-details__summary,
+html:not(.dark) aside.control-panel.dashboard-sidebar .sidebar-details__summary span,
+html:not(.dark) aside.control-panel.dashboard-sidebar .upload-dropzone__name,
+html:not(.dark) aside.control-panel.dashboard-sidebar .checkbox,
+html:not(.dark) aside.control-panel.dashboard-sidebar .b-checkbox.checkbox,
+html:not(.dark) aside.control-panel.dashboard-sidebar .b-checkbox.checkbox span,
+html:not(.dark) aside.control-panel.dashboard-sidebar .radio,
+html:not(.dark) aside.control-panel.dashboard-sidebar .radio span,
+html:not(.dark) aside.control-panel.dashboard-sidebar .control-title,
+html:not(.dark) .dashboard-sidebar.control-panel .sidebar-details__summary,
+html:not(.dark) .dashboard-sidebar.control-panel .sidebar-details__summary span,
+html:not(.dark) .dashboard-sidebar.control-panel .b-checkbox.checkbox span {
+  color: var(--sidebar-ink) !important;
+  opacity: 1 !important;
+}
+
+html:not(.dark) aside.control-panel.dashboard-sidebar .label,
+html:not(.dark) aside.control-panel.dashboard-sidebar .b-field .label,
+html:not(.dark) aside.control-panel.dashboard-sidebar .field > .label,
+html:not(.dark) aside.control-panel.dashboard-sidebar label:not(.b-checkbox),
+html:not(.dark) aside.control-panel.dashboard-sidebar .upload-panel__eyebrow,
+html:not(.dark) aside.control-panel.dashboard-sidebar .upload-dropzone__hint,
+html:not(.dark) aside.control-panel.dashboard-sidebar .upload-option-row__label,
+html:not(.dark) aside.control-panel.dashboard-sidebar .control-subtitle,
+html:not(.dark) aside.control-panel.dashboard-sidebar .sidebar-hpc-hint,
+html:not(.dark) .dashboard-sidebar.control-panel .label,
+html:not(.dark) .dashboard-sidebar.control-panel .b-field .label,
+html:not(.dark) .dashboard-sidebar.control-panel .field > .label {
+  color: var(--sidebar-muted) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  opacity: 1 !important;
+}
+
+html:not(.dark) aside.control-panel.dashboard-sidebar .input,
+html:not(.dark) aside.control-panel.dashboard-sidebar .select select,
+html:not(.dark) aside.control-panel.dashboard-sidebar .textarea,
+html:not(.dark) .dashboard-sidebar.control-panel .input,
+html:not(.dark) .dashboard-sidebar.control-panel .select select {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: var(--sidebar-ink) !important;
+}
+
+html:not(.dark) aside.control-panel.dashboard-sidebar span,
+html:not(.dark) .dashboard-sidebar.control-panel span {
+  color: inherit;
+}
+
 /* ── RESPONSIVE & MOBILE STYLES ── */
 @media (max-width: 1023px) {
   .dashboard-mob-header {
