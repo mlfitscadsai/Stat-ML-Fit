@@ -139,6 +139,9 @@ export default {
       // ── 3. Set task mode + target first so checkmodelTask resolves correctly ──
       sidebar.taskMode    = config.isClassification ? 'classification' : 'regression'
       sidebar.modelTarget = config.target
+      if (config.target != null) {
+        this.appStore.setTarget(config.target)
+      }
       sidebar.modelOption = config.algoId
       sidebar.crossValidationOption = config.crossValidationOption
 

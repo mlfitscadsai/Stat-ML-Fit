@@ -170,7 +170,7 @@ import { applyDataTransformation, handle_missing_values, encode_dataset } from '
 import { filterOutliersFromDataFrame } from '@/helpers/outliers';
 import { TASK_MODES, detectTaskFromTarget, resolveTaskMode, validateModeCompatibility } from '@/helpers/task_mode';
 import { getDanfo } from '@/utils/danfo_loader';
-import { dfColumn } from '@/utils/danfo_frame';
+import { dfColumn, resolveDataFrameColumnName } from '@/utils/danfo_frame';
 import {
     buildCsvBlobFromDataframe,
     buildCsvBlobFromRawRows,
@@ -495,6 +495,7 @@ export default {
             }
             if (config.target !== undefined && config.target !== null) {
                 this.modelTarget = config.target;
+                this.settings.setTarget(config.target);
             }
             if (config.algoId !== undefined && config.algoId !== null) {
                 this.modelOption = config.algoId;
@@ -524,7 +525,8 @@ export default {
                     })
                     return
                 }
-                if (!this.modelTarget) {
+                const targetName = this.modelTarget || this.settings.modelTarget
+                if (!targetName) {
                     this.Toast.open({
                         duration: 3000,
                         message: 'Please select a target column.',
@@ -532,12 +534,26 @@ export default {
                     })
                     return
                 }
+                const danfo = await getDanfo();
+                this.dataframe = new danfo.DataFrame(this.settings.rawData);
+                const resolvedTarget = resolveDataFrameColumnName(this.dataframe, targetName);
+                if (!this.dataframe.columns?.includes(resolvedTarget)) {
+                    const available = (this.dataframe.columns || []).join(', ') || '(none)';
+                    throw new Error(
+                        `Column "${targetName}" is not available on this dataset. Available columns: ${available}`
+                    );
+                }
+                this.modelTarget = resolvedTarget;
+                this.settings.setTarget(resolvedTarget);
                 this.checkmodelTask()
-                const targetFeature = this.settings.items.find(feature => feature.name === this.modelTarget)
+                const targetFeature = this.settings.items.find(feature => feature.name === resolvedTarget)
+                    || this.settings.items.find(
+                        (feature) => feature.name?.toLowerCase() === resolvedTarget.toLowerCase()
+                    )
                 const modeValidation = validateModeCompatibility(
                     this.taskMode,
                     targetFeature?.type,
-                    this.dataframe ? dfColumn(this.dataframe, this.modelTarget)?.values ?? [] : []
+                    dfColumn(this.dataframe, resolvedTarget)?.values ?? []
                 )
                 if (!modeValidation.valid) {
                     this.Toast.open({
@@ -572,13 +588,10 @@ export default {
                 }
                 let seed = +this.seed;
                 this.settings.setSeed(seed)
-                const danfo = await getDanfo();
                 let categoricalFeatures = []
-                let dataset = null;
-                this.dataframe = new danfo.DataFrame(this.settings.rawData);
-                dataset = await this.dataframe.sample(this.dataframe.$data.length, { seed: seed });
+                let dataset = await this.dataframe.sample(this.dataframe.$data.length, { seed: seed });
 
-                const target = this.settings.modelTarget;
+                const target = resolvedTarget;
 
                 // Get selected features and numeric columns
                 let numericColumns = this.settings.items.filter(m => m.selected && m.type === FeatureCategories.Numerical.id).map(m => m.name);
@@ -621,7 +634,10 @@ export default {
                         });
                     }
                 }
-                filterd_dataset = handle_missing_values(filterd_dataset)
+                filterd_dataset = handle_missing_values(
+                    filterd_dataset,
+                    this.imputationOption !== 1
+                )
                 filterd_dataset = applyDataTransformation(filterd_dataset, numericColumns, this.settings.transformationsList);
                 if (this.dataScalingBehavior) {
                     let transformations = []
