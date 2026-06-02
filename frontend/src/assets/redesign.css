@@ -1220,20 +1220,39 @@ html:not(.dark) .dashboard-sidebar.control-panel .upload-option-row__label {
 .sidebar-field {
   margin-bottom: 0 !important;
 }
-.sidebar-field--with-action .field-body,
-.sidebar-field--with-action .field {
-  align-items: flex-end;
+.sidebar-field .field-body {
+  flex: 1;
+  min-width: 0;
 }
-.model-config-btn {
-  align-self: flex-end;
+.sidebar-model-row {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+.sidebar-model-row > .select {
+  flex: 1 1 0;
+  margin: 0 !important;
+  min-width: 0;
+  width: 100%;
+}
+.sidebar-model-row > .select select {
+  width: 100%;
+}
+.control-panel .sidebar-model-row .model-config-btn {
+  align-self: center;
   background: rgba(255, 255, 255, 0.06) !important;
   border: 1px solid rgba(148, 163, 184, 0.18) !important;
   border-radius: 10px !important;
   color: var(--sidebar-ink) !important;
+  flex: 0 0 2.65rem;
   height: 2.65rem !important;
+  margin: 0 !important;
+  min-height: 2.65rem !important;
+  padding: 0 !important;
   width: 2.65rem !important;
 }
-.model-config-btn:hover {
+.control-panel .sidebar-model-row .model-config-btn:hover {
   border-color: var(--sidebar-accent) !important;
   color: var(--sidebar-accent) !important;
 }

@@ -51,14 +51,23 @@
                         <i class="fas fa-chevron-down sidebar-details__icon"></i>
                     </summary>
                     <div class="sidebar-details__content">
-                        <b-field class="sidebar-field sidebar-field--with-action" label="Model">
-                            <b-select :disabled="tuneModel" :expanded="true" v-model="modelOption" size="is-small">
-                                <option v-for="option in modelOptions" :value="option.id" :key="option.id">
-                                    {{ option.label }}
-                                </option>
-                            </b-select>
-                            <b-button @click="configureModel" size="is-small" class="model-config-btn" icon-pack="fas"
-                                :icon-left="!this.tuneModel ? 'cog' : 'arrow-left'"></b-button>
+                        <b-field class="sidebar-field" label="Model">
+                            <div class="sidebar-model-row">
+                                <b-select :disabled="tuneModel" :expanded="true" v-model="modelOption" size="is-small">
+                                    <option v-for="option in modelOptions" :value="option.id" :key="option.id">
+                                        {{ option.label }}
+                                    </option>
+                                </b-select>
+                                <b-button
+                                    type="button"
+                                    @click="configureModel"
+                                    size="is-small"
+                                    class="model-config-btn"
+                                    icon-pack="fas"
+                                    :icon-left="!tuneModel ? 'cog' : 'arrow-left'"
+                                    :aria-label="tuneModel ? 'Back to model list' : 'Configure model hyperparameters'"
+                                />
+                            </div>
                         </b-field>
 
                         <!-- Hyperparameters sub-section -->
@@ -934,18 +943,6 @@ export default {
 
 .sidebar-hpc-hint--warn {
     color: #fbbf24;
-}
-
-.model-config-btn {
-    background-color: #eef6f3 !important;
-    border-color: #bdd0c9 !important;
-    color: #21443a !important;
-}
-
-.model-config-btn:hover {
-    background-color: #e3efea !important;
-    border-color: #a8c0b8 !important;
-    color: #1b3a31 !important;
 }
 
 .is-danger {
