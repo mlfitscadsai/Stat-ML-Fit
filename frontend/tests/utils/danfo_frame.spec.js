@@ -29,6 +29,11 @@ describe('danfo_frame.js', () => {
         expect(resolveDataFrameColumnName(frame, 'species')).toBe('Species');
     });
 
+    it('resolveDataFrameColumnName uses $columns when columns getter is empty', () => {
+        const frame = { columns: [], $columns: ['Species'] };
+        expect(resolveDataFrameColumnName(frame, 'species', ['Species'])).toBe('Species');
+    });
+
     it('dfColumn reads target via bracket getters after column subset (no .column method)', () => {
         const rows = [
             { sepallength: 5.1, Species: 'Setosa' },

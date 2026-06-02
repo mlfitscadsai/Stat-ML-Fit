@@ -178,11 +178,14 @@ import { settingStore } from '@/stores/settings'
 import { applyDataTransformation, handle_missing_values, encode_dataset } from '@/helpers/utils';
 import { filterOutliersFromDataFrame } from '@/helpers/outliers';
 import { TASK_MODES, detectTaskFromTarget, resolveTaskMode, validateModeCompatibility } from '@/helpers/task_mode';
+import { markRaw } from 'vue';
 import { getDanfo } from '@/utils/danfo_loader';
-import { dfColumn, resolveDataFrameColumnName } from '@/utils/danfo_frame';
+import { dfColumn, getFrameColumnNames, resolveDataFrameColumnName } from '@/utils/danfo_frame';
 import {
     createTrainingDataFrame,
     getDataframeRowCount,
+    getFrameColumns,
+    getStoredColumnNames,
     hasLoadedDataset,
     normalizeRawRows,
     storeDataframeInPinia,
@@ -558,10 +561,24 @@ export default {
                     return
                 }
                 const danfo = await getDanfo();
-                this.dataframe = createTrainingDataFrame(danfo, this.settings);
-                const resolvedTarget = resolveDataFrameColumnName(this.dataframe, targetName);
-                if (!this.dataframe.columns?.includes(resolvedTarget)) {
-                    const available = (this.dataframe.columns || []).join(', ') || '(none)';
+                const trainingFrame = createTrainingDataFrame(danfo, this.settings);
+                this.dataframe = markRaw(trainingFrame);
+                storeDataframeInPinia(this.settings, trainingFrame);
+
+                const columnNames = getFrameColumns(this.dataframe);
+                const knownColumns = columnNames.length
+                    ? columnNames
+                    : getStoredColumnNames(this.settings);
+                const resolvedTarget = resolveDataFrameColumnName(
+                    this.dataframe,
+                    targetName,
+                    knownColumns
+                );
+                const targetOk = knownColumns.some(
+                    (c) => c === resolvedTarget || String(c).toLowerCase() === resolvedTarget.toLowerCase()
+                );
+                if (!targetOk) {
+                    const available = knownColumns.join(', ') || '(none)';
                     throw new Error(
                         `Column "${targetName}" is not available on this dataset. Available columns: ${available}`
                     );
@@ -684,7 +701,13 @@ export default {
                 }
 
 
-                const targets = dfColumn(filterd_dataset, target)
+                const targets = dfColumn(
+                    filterd_dataset,
+                    target,
+                    getFrameColumns(filterd_dataset).length
+                        ? getFrameColumns(filterd_dataset)
+                        : knownColumns
+                )
                 filterd_dataset.drop({ columns: target, inplace: true })
 
 

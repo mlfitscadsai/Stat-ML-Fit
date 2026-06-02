@@ -8,17 +8,33 @@ export function unwrapFrame(frame) {
     return frame;
 }
 
+/** Column names from a danfo frame (works when Vue proxy hides `.columns`). */
+export function getFrameColumnNames(frame) {
+    const raw = unwrapFrame(frame);
+    if (!raw) return [];
+    if (Array.isArray(raw.columns) && raw.columns.length > 0) {
+        return [...raw.columns];
+    }
+    if (Array.isArray(raw.$columns) && raw.$columns.length > 0) {
+        return [...raw.$columns];
+    }
+    return [];
+}
+
 /**
  * Resolve a user-facing column name to an actual column on the frame (trim + case-insensitive).
+ * @param {object} frame
+ * @param {string} columnName
+ * @param {string[]} [columnNames] optional list when frame metadata is unavailable
  */
-export function resolveDataFrameColumnName(frame, columnName) {
+export function resolveDataFrameColumnName(frame, columnName, columnNames = null) {
     const raw = unwrapFrame(frame);
     if (raw == null || columnName == null || columnName === '') {
         return columnName == null ? '' : String(columnName).trim();
     }
     const requested = String(columnName).trim();
-    const cols = raw.columns;
-    if (!Array.isArray(cols) || cols.length === 0) return requested;
+    const cols = columnNames?.length ? columnNames : getFrameColumnNames(raw);
+    if (!cols.length) return requested;
     if (cols.includes(requested)) return requested;
     const match = cols.find(
         (c) => String(c).trim().toLowerCase() === requested.toLowerCase()
@@ -66,17 +82,19 @@ function columnViaColumnFormat(frame, resolvedName) {
 /**
  * @param {import('danfojs').DataFrame | Record<string, unknown>} frame
  * @param {string} columnName
+ * @param {string[]} [fallbackColumnNames] when frame `.columns` is empty (e.g. Vue proxy)
  */
-export function dfColumn(frame, columnName) {
+export function dfColumn(frame, columnName, fallbackColumnNames = null) {
     const raw = unwrapFrame(frame);
     if (raw == null) {
         throw new Error(`Dataset is required to read column "${columnName}"`);
     }
 
-    const resolvedName = resolveDataFrameColumnName(raw, columnName);
-    const cols = raw.columns;
-    if (Array.isArray(cols) && cols.length > 0 && !cols.includes(resolvedName)) {
-        const available = cols.join(', ');
+    const cols = getFrameColumnNames(raw);
+    const nameList = fallbackColumnNames?.length ? fallbackColumnNames : cols;
+    const resolvedName = resolveDataFrameColumnName(raw, columnName, nameList);
+    if (nameList.length > 0 && !nameList.includes(resolvedName)) {
+        const available = nameList.join(', ');
         throw new Error(
             `Column "${columnName}" is not available on this dataset. Available columns: ${available}`
         );

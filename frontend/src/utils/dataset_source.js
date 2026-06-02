@@ -1,5 +1,5 @@
 import { markRaw } from 'vue';
-import { dfColumn, unwrapFrame } from '@/utils/danfo_frame';
+import { dfColumn, getFrameColumnNames, unwrapFrame } from '@/utils/danfo_frame';
 
 export { unwrapFrame };
 
@@ -18,15 +18,7 @@ export function normalizeRawRows(rawData) {
 }
 
 export function getFrameColumns(frame) {
-    const raw = unwrapFrame(frame);
-    if (!raw) return [];
-    if (Array.isArray(raw.columns) && raw.columns.length > 0) {
-        return [...raw.columns];
-    }
-    if (Array.isArray(raw.$columns) && raw.$columns.length > 0) {
-        return [...raw.$columns];
-    }
-    return [];
+    return getFrameColumnNames(frame);
 }
 
 /**
@@ -134,7 +126,7 @@ export function createTrainingDataFrame(danfo, settings) {
             `Failed to build the training dataset (expected columns: ${columnNames.join(', ')}). Reload the dataset and try again.`
         );
     }
-    return df;
+    return markRaw(df);
 }
 
 export function getDataframeRowCount(frame) {
