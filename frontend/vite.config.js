@@ -21,10 +21,6 @@ export default defineConfig({
         },
     },
 
-    optimizeDeps: {
-        include: ['danfojs/dist/danfojs-browser/src/index.js', '@/utils/danfo_entry.js'],
-    },
-
     server: {
         port: 3000,
         open: true // automatically open browser

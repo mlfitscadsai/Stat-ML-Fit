@@ -1,31 +1,51 @@
 let danfoPromise = null;
 let plotlyPromise = null;
 
-function pickDanfoNamespace(mod) {
-    if (!mod) return null;
-    if (typeof mod.DataFrame === 'function') return mod;
-    if (typeof mod.default?.DataFrame === 'function') return mod.default;
-    if (typeof mod.dfd?.DataFrame === 'function') return mod.dfd;
-    if (typeof mod.default?.dfd?.DataFrame === 'function') return mod.default.dfd;
-    const globalDfd = typeof globalThis !== 'undefined' ? globalThis.dfd : null;
-    if (typeof globalDfd?.DataFrame === 'function') return globalDfd;
+const DANFO_SCRIPT_URL = '/vendor/danfo.bundle.js';
+
+function readGlobalDanfo() {
+    const dfd = typeof globalThis !== 'undefined' ? globalThis.dfd : null;
+    if (dfd?.DataFrame) return dfd;
+    if (typeof window !== 'undefined' && window.dfd?.DataFrame) return window.dfd;
     return null;
 }
 
-function resolveDanfoModule(mod) {
-    const namespace = pickDanfoNamespace(mod);
-    if (namespace) return namespace;
-    throw new Error('Danfo.js failed to load (DataFrame export missing)');
+function loadDanfoScript() {
+    const existing = readGlobalDanfo();
+    if (existing) return Promise.resolve(existing);
+
+    return new Promise((resolve, reject) => {
+        const prior = document.querySelector(`script[data-danfo-bundle="1"]`);
+        if (prior) {
+            prior.addEventListener('load', () => {
+                const dfd = readGlobalDanfo();
+                if (dfd) resolve(dfd);
+                else reject(new Error('Danfo.js script loaded but DataFrame is missing'));
+            });
+            prior.addEventListener('error', () => reject(new Error('Danfo.js script failed to load')));
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = DANFO_SCRIPT_URL;
+        script.async = true;
+        script.dataset.danfoBundle = '1';
+        script.onload = () => {
+            const dfd = readGlobalDanfo();
+            if (dfd) resolve(dfd);
+            else reject(new Error('Danfo.js failed to load (DataFrame export missing)'));
+        };
+        script.onerror = () => reject(new Error(`Failed to load ${DANFO_SCRIPT_URL}`));
+        document.head.appendChild(script);
+    });
 }
 
 export const getDanfo = async () => {
     if (!danfoPromise) {
-        danfoPromise = import('@/utils/danfo_entry.js')
-            .then(resolveDanfoModule)
-            .catch((err) => {
-                danfoPromise = null;
-                throw err;
-            });
+        danfoPromise = loadDanfoScript().catch((err) => {
+            danfoPromise = null;
+            throw err;
+        });
     }
     return danfoPromise;
 };

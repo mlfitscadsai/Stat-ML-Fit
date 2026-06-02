@@ -5,6 +5,7 @@ dist/
 **/dist/
 frontend/dist/
 frontend/public/webr/
+frontend/public/vendor/
 
 .venv/
 env/

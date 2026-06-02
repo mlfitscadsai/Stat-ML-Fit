@@ -48,7 +48,15 @@ if [[ "${SKIP_FRONTEND:-0}" != "1" ]]; then
   npm run build
   test -f dist/index.html
   if grep -rq 'danfojs/dist/danfojs-browser' dist/assets/*.js 2>/dev/null; then
-    echo "ERROR: frontend dist still contains bare danfojs import (rebuild failed). See danfo_entry.js." >&2
+    echo "ERROR: frontend dist still contains bare danfojs import (rebuild failed)." >&2
+    exit 1
+  fi
+  if grep -rqE 'from["'\'']?\./data-danfo-' dist/assets/*.js 2>/dev/null; then
+    echo "ERROR: danfo must not be Vite-bundled (causes white screen). Use public/vendor/danfo.bundle.js." >&2
+    exit 1
+  fi
+  test -f dist/vendor/danfo.bundle.js || {
+    echo "ERROR: missing dist/vendor/danfo.bundle.js (run prebuild copy-danfo-bundle)" >&2
     exit 1
   fi
   test -f dist/webr/dist/webr.mjs || test -f public/webr/dist/webr.mjs || {
