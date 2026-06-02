@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { markRaw } from 'vue'
 import { createExperimentRecord, saveExperiment } from '@/services/experiments/experiment-store'
 import { applyTheme, getStoredTheme, setStoredTheme } from '@/services/theme/theme-service'
 
@@ -24,6 +25,7 @@ export const settingStore = defineStore('app', {
             count: 0,
             columns: 0
         },
+        datasetColumns: [],
         target: null,
         isClassification: true,
         taskMode: 'auto',
@@ -110,16 +112,22 @@ export const settingStore = defineStore('app', {
                 count: 0,
                 columns: 0
             };
-
+            this.datasetColumns = [];
+        },
+        setDatasetColumns(columns) {
+            this.datasetColumns = Array.isArray(columns) ? [...columns] : [];
         },
         increaseCounter() {
             this.counter++;
         },
         setDataframe(data) {
-            this.df = data;
+            this.df = data && typeof data === 'object' ? markRaw(data) : {};
         },
         setRawData(data) {
-            this.rawData = data;
+            this.rawData = Array.isArray(data) ? data : [];
+            if (this.rawData[0] && (!this.datasetColumns || this.datasetColumns.length === 0)) {
+                this.datasetColumns = Object.keys(this.rawData[0]);
+            }
         },
         addFeature(feature) {
             feature.scaler = 0;

@@ -44,6 +44,7 @@
 <script>
 import { ParserFactory } from '../helpers/parser/parser_factory.js'
 import { getDanfo } from '@/utils/danfo_loader';
+import { storeDataframeInPinia } from '@/utils/dataset_source';
 import { settingStore } from '@/stores/settings'
 import { BField, BCheckbox, BUpload, BSelect } from 'buefy';
 const DATASET_SIZE = 10000;
@@ -162,7 +163,8 @@ export default {
             this.settings.setDatasetName(name);
             this.settings.setDatasetShape({ count: dataset.$data.length, columns: dataset.columns.length });
             let df = await dataset.sample(dataset.$data.length, { seed: this.settings.getSeed });
-            this.settings.setDataframe(df)
+            this.settings.setDatasetColumns(dataset.columns);
+            storeDataframeInPinia(this.settings, df);
             this.$emit('uploaded', true)
         },
         async process_file(file, type) {
@@ -181,10 +183,17 @@ export default {
             }
             const danfo = await getDanfo();
             let dataFrame = new danfo.DataFrame(processdDataset);
-            let idIndex = dataFrame.columns.findIndex(col => col.toLowerCase() === 'id')
-            if (idIndex > -1)
-                dataFrame.drop({ columns: dataFrame.columns[idIndex], inplace: true })
-            this.settings.setRawData(processdDataset);
+            let rows = processdDataset;
+            let columnNames = rows[0] ? Object.keys(rows[0]) : [...dataFrame.columns];
+            const idIndex = columnNames.findIndex((col) => col.toLowerCase() === 'id');
+            if (idIndex > -1) {
+                const idCol = columnNames[idIndex];
+                dataFrame.drop({ columns: idCol, inplace: true });
+                rows = rows.map(({ [idCol]: _removed, ...rest }) => rest);
+                columnNames = columnNames.filter((col) => col !== idCol);
+            }
+            this.settings.setDatasetColumns(columnNames);
+            this.settings.setRawData(rows);
             this.$emit("uploaded-file", file)
             return dataFrame
         },

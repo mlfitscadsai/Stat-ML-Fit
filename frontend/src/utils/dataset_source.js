@@ -1,3 +1,4 @@
+import { markRaw } from 'vue';
 import { dfColumn, unwrapFrame } from '@/utils/danfo_frame';
 
 export { unwrapFrame };
@@ -16,25 +17,76 @@ export function normalizeRawRows(rawData) {
     return rawData;
 }
 
+export function getFrameColumns(frame) {
+    const raw = unwrapFrame(frame);
+    if (!raw) return [];
+    if (Array.isArray(raw.columns) && raw.columns.length > 0) {
+        return [...raw.columns];
+    }
+    if (Array.isArray(raw.$columns) && raw.$columns.length > 0) {
+        return [...raw.$columns];
+    }
+    return [];
+}
+
+/**
+ * Column names from store metadata (survives Pinia / danfo bundle quirks).
+ * @param {object} settings
+ * @param {Record<string, unknown>[]} [rows]
+ * @returns {string[]}
+ */
+export function getStoredColumnNames(settings, rows = []) {
+    if (Array.isArray(settings?.datasetColumns) && settings.datasetColumns.length > 0) {
+        return [...settings.datasetColumns];
+    }
+    const normalized = rows.length ? rows : normalizeRawRows(settings?.rawData);
+    if (normalized[0]) {
+        return Object.keys(normalized[0]);
+    }
+    const fromDf = getFrameColumns(settings?.getDataset ?? settings?.df);
+    if (fromDf.length) return fromDf;
+    const features = settings?.features ?? settings?.items;
+    if (Array.isArray(features) && features.length > 0) {
+        return features.map((f) => f.name).filter(Boolean);
+    }
+    return [];
+}
+
 export function hasLoadedDataset(settings) {
     const rows = normalizeRawRows(settings?.rawData);
     if (rows.length > 0) return true;
-    const df = unwrapFrame(settings?.getDataset ?? settings?.df);
-    return Boolean(df?.columns?.length);
+    if (getStoredColumnNames(settings, rows).length > 0 && (settings?.datasetShape?.count ?? 0) > 0) {
+        return true;
+    }
+    return getFrameColumns(settings?.getDataset ?? settings?.df).length > 0;
+}
+
+/**
+ * @param {Record<string, unknown>[]} rows
+ * @param {string[]} columnNames
+ */
+export function rowsToColumnDict(rows, columnNames) {
+    const data = {};
+    for (const col of columnNames) {
+        data[col] = rows.map((row) => row[col]);
+    }
+    return data;
 }
 
 /**
  * @param {import('danfojs').DataFrame} frame
+ * @param {string[]} [columnNames]
  * @returns {Record<string, unknown>[]}
  */
-export function dataframeToRows(frame) {
+export function dataframeToRows(frame, columnNames = null) {
     const df = unwrapFrame(frame);
-    if (!df?.columns?.length) return [];
+    const cols = columnNames?.length ? columnNames : getFrameColumns(df);
+    if (!cols.length) return [];
     const rowCount = df.shape?.[0] ?? df.$data?.length ?? df.values?.length ?? 0;
     const rows = [];
     for (let i = 0; i < rowCount; i++) {
         const row = {};
-        for (const col of df.columns) {
+        for (const col of cols) {
             const values = dfColumn(df, col).values;
             row[col] = values[i];
         }
@@ -44,47 +96,54 @@ export function dataframeToRows(frame) {
 }
 
 /**
- * Build a training DataFrame from raw rows or the dataframe already in the Pinia store.
- * @param {ReturnType<typeof import('@/utils/danfo_loader').getDanfo>} danfo
+ * Build a training DataFrame from raw rows and explicit column metadata.
+ * @param {Awaited<ReturnType<typeof import('@/utils/danfo_loader').getDanfo>>} danfo
  * @param {import('@/stores/settings').settingStore} settings
  */
 export function createTrainingDataFrame(danfo, settings) {
-    const rows = normalizeRawRows(settings.rawData);
-    if (rows.length > 0) {
-        const fromRaw = new danfo.DataFrame(rows);
-        if (fromRaw.columns?.length > 0) {
-            return fromRaw;
+    let rows = normalizeRawRows(settings.rawData);
+    let columnNames = getStoredColumnNames(settings, rows);
+
+    if (rows.length === 0) {
+        const existing = unwrapFrame(settings.getDataset);
+        if (existing) {
+            columnNames = columnNames.length ? columnNames : getFrameColumns(existing);
+            rows = dataframeToRows(existing, columnNames);
         }
     }
 
-    const existing = unwrapFrame(settings.getDataset);
-    if (!existing?.columns?.length) {
+    if (!columnNames.length && rows[0]) {
+        columnNames = Object.keys(rows[0]);
+    }
+
+    if (rows.length === 0 || columnNames.length === 0) {
         throw new Error(
-            'Dataset is not loaded correctly. Reload iris (or your CSV) from the sidebar, then train again.'
+            'Dataset is not loaded correctly. Choose the iris preset again (or upload your CSV), then train.'
         );
     }
 
-    if (typeof existing.copy === 'function') {
-        const copy = existing.copy();
-        const backfill = normalizeRawRows(settings.rawData);
-        if (backfill.length === 0) {
-            settings.setRawData(dataframeToRows(copy));
-        }
-        return copy;
-    }
+    settings.setRawData(rows);
+    settings.setDatasetColumns(columnNames);
 
-    const extracted = dataframeToRows(existing);
-    if (!extracted.length) {
+    let df = new danfo.DataFrame(rowsToColumnDict(rows, columnNames));
+    if (!getFrameColumns(df).length) {
+        df = new danfo.DataFrame(rows, { columns: columnNames });
+    }
+    if (!getFrameColumns(df).length) {
         throw new Error(
-            'Could not read dataset rows from memory. Reload the dataset from the sidebar, then train again.'
+            `Failed to build the training dataset (expected columns: ${columnNames.join(', ')}). Reload the dataset and try again.`
         );
     }
-    settings.setRawData(extracted);
-    return new danfo.DataFrame(extracted);
+    return df;
 }
 
 export function getDataframeRowCount(frame) {
     const df = unwrapFrame(frame);
     if (!df) return 0;
     return df.shape?.[0] ?? df.$data?.length ?? df.values?.length ?? 0;
+}
+
+/** @param {import('danfojs').DataFrame | null | undefined} data */
+export function storeDataframeInPinia(settings, data) {
+    settings.setDataframe(data ? markRaw(data) : {});
 }

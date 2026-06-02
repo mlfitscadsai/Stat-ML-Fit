@@ -175,6 +175,8 @@ import {
     createTrainingDataFrame,
     getDataframeRowCount,
     hasLoadedDataset,
+    normalizeRawRows,
+    storeDataframeInPinia,
 } from '@/utils/dataset_source';
 import {
     buildCsvBlobFromDataframe,
@@ -413,15 +415,22 @@ export default {
         },
         generateTargetDropdown() {
             this.dataframe = this.settings.getDataset;
-            this.columns = this.dataframe.columns;
+            this.columns = this.settings.datasetColumns?.length
+                ? this.settings.datasetColumns
+                : this.dataframe.columns;
+            const previewRows = normalizeRawRows(this.settings.rawData);
             this.featureSettings = this.columns.map((column, index) => {
-                let series = this.dataframe[column];
-                let isString = this.dataframe.dtypes[index] === 'string';
-                let uniqueCount = series.unique().values.length;
+                let series = this.dataframe?.[column];
+                let isString = this.dataframe?.dtypes?.[index] === 'string';
+                if (!isString && previewRows[0]) {
+                    isString = typeof previewRows[0][column] === 'string';
+                }
+                let uniqueCount = series?.unique?.().values?.length ?? new Set(previewRows.map((r) => r[column])).size;
 
                 // Auto-exclude ID columns, High Cardinality Categoricals, and Constants
                 let isConstant = uniqueCount <= 1;
-                let isId = uniqueCount === this.dataframe.shape[0];
+                const rowCount = this.dataframe?.shape?.[0] ?? previewRows.length;
+                let isId = uniqueCount === rowCount;
                 let isHighCardinality = isString && uniqueCount > 20;
 
                 return {
@@ -430,14 +439,14 @@ export default {
                     type: isString ? FeatureCategories.Nominal.id : FeatureCategories.Numerical.id
                 }
             })
-            const normalizedColumns = this.dataframe.columns.map(column => String(column).toLowerCase().trim())
-            const preferredTargets = ['survived', 'target', 'label', 'class', 'y']
+            const normalizedColumns = this.columns.map(column => String(column).toLowerCase().trim())
+            const preferredTargets = ['survived', 'target', 'label', 'class', 'y', 'species']
             const preferredTargetIndex = preferredTargets
                 .map(name => normalizedColumns.findIndex(column => column === name || column.includes(name)))
                 .find(index => index !== -1)
             this.modelTarget = preferredTargetIndex !== undefined
-                ? this.dataframe.columns[preferredTargetIndex]
-                : this.dataframe.columns[this.dataframe.columns.length - 1];
+                ? this.columns[preferredTargetIndex]
+                : this.columns[this.columns.length - 1];
             this.settings.setTarget(this.modelTarget)
             let selectedFeatures = this.featureSettings.filter(feature => feature.selected);
             for (const element of selectedFeatures) {
@@ -779,7 +788,7 @@ export default {
             }).then(res => {
                 let df = new danfo.DataFrame(res.data);
                 this.dataframe = df
-                this.settings.setDataframe(df);
+                storeDataframeInPinia(this.settings, df);
                 this.training = false;
             })
         }

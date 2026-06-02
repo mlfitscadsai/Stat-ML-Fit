@@ -4,6 +4,8 @@ import {
     hasLoadedDataset,
     dataframeToRows,
     createTrainingDataFrame,
+    getStoredColumnNames,
+    rowsToColumnDict,
 } from '../../src/utils/dataset_source';
 
 describe('dataset_source.js', () => {
@@ -13,44 +15,58 @@ describe('dataset_source.js', () => {
         expect(normalizeRawRows([{ a: 1 }])).toEqual([{ a: 1 }]);
     });
 
-    it('hasLoadedDataset accepts store df when rawData is empty', () => {
+    it('hasLoadedDataset accepts metadata when raw rows are missing', () => {
         const settings = {
-            rawData: {},
-            getDataset: { columns: ['Species'], shape: [2, 1] },
+            rawData: [],
+            datasetColumns: ['Species', 'sepallength'],
+            datasetShape: { count: 150, columns: 5 },
+            getDataset: {},
         };
         expect(hasLoadedDataset(settings)).toBe(true);
     });
 
-    it('createTrainingDataFrame falls back to store df when rawData is empty', () => {
-        const danfo = {
-            DataFrame: vi.fn((rows) => {
-                const cols = rows[0] ? Object.keys(rows[0]) : [];
-                return {
-                    columns: cols,
-                    shape: [rows.length, cols.length],
-                    copy() {
-                        return this;
-                    },
-                };
-            }),
+    it('getStoredColumnNames prefers datasetColumns', () => {
+        const settings = {
+            datasetColumns: ['Species'],
+            rawData: [{ Species: 'A' }],
         };
+        expect(getStoredColumnNames(settings)).toEqual(['Species']);
+    });
+
+    it('rowsToColumnDict builds column-oriented payload', () => {
+        const rows = [
+            { Species: 'A', x: 1 },
+            { Species: 'B', x: 2 },
+        ];
+        expect(rowsToColumnDict(rows, ['Species', 'x'])).toEqual({
+            Species: ['A', 'B'],
+            x: [1, 2],
+        });
+    });
+
+    it('createTrainingDataFrame uses column dict when store df has no columns', () => {
+        function MockDataFrame(data) {
+            const cols = Array.isArray(data)
+                ? (data[0] ? Object.keys(data[0]) : [])
+                : Object.keys(data || {});
+            this.columns = cols;
+            this.shape = [Array.isArray(data?.Species) ? data.Species.length : 0, cols.length];
+        }
+        const danfo = { DataFrame: MockDataFrame };
         const store = {
-            rawData: {},
-            getDataset: {
-                columns: ['Species'],
-                shape: [2, 1],
-                column(name) {
-                    return { values: name === 'Species' ? ['A', 'B'] : [] };
-                },
-                copy() {
-                    return this;
-                },
-            },
+            rawData: [
+                { sepallength: 5.1, Species: 'Setosa' },
+                { sepallength: 4.9, Species: 'Setosa' },
+            ],
+            datasetColumns: ['sepallength', 'Species'],
+            datasetShape: { count: 2, columns: 2 },
+            getDataset: { columns: [] },
             setRawData: vi.fn(),
+            setDatasetColumns: vi.fn(),
         };
         const df = createTrainingDataFrame(danfo, store);
         expect(df.columns).toContain('Species');
-        expect(store.setRawData).toHaveBeenCalled();
+        expect(df.columns).toContain('sepallength');
     });
 
     it('dataframeToRows extracts row objects', () => {
