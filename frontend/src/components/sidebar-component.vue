@@ -199,11 +199,14 @@ import {
     columnValuesFromRows,
     createTrainingDataFrame,
     dataframeToRows,
+    defaultSelectedFeatureColumns,
+    dropRowsWithMissing,
     getFrameColumns,
     getStoredColumnNames,
     hasLoadedDataset,
     inferColumnDtype,
     normalizeRawRows,
+    resolveTrainingRows,
     sampleRows,
     seriesFromRows,
     storeDataframeInPinia,
@@ -607,6 +610,11 @@ export default {
                 }
 
                 const danfo = await getDanfo();
+                const { rows: resolvedRows, columnNames: resolvedColumns } =
+                    resolveTrainingRows(this.settings);
+                if (resolvedColumns.length) {
+                    knownColumns = resolvedColumns;
+                }
                 const trainingFrame = createTrainingDataFrame(danfo, this.settings);
                 this.dataframe = markRaw(trainingFrame);
                 storeDataframeInPinia(this.settings, trainingFrame);
@@ -680,7 +688,11 @@ export default {
                 let categoricalFeatures = []
 
                 const target = resolvedTarget;
-                let trainingRows = sampleRows(normalizeRawRows(this.settings.rawData), seed);
+                const sourceRows =
+                    resolvedRows.length > 0
+                        ? resolvedRows
+                        : normalizeRawRows(this.settings.rawData);
+                let trainingRows = sampleRows(sourceRows, seed);
                 if (!trainingRows.length) {
                     throw new Error(
                         'No training rows in memory. Choose the iris preset again (or re-upload your CSV), then train.'
@@ -689,37 +701,55 @@ export default {
                 this.dataframe = markRaw(buildDataFrameFromRows(danfo, trainingRows, knownColumns));
                 storeDataframeInPinia(this.settings, this.dataframe);
 
-                const columnSet = new Set(knownColumns);
-
-                // Get selected features and numeric columns
-                let numericColumns = this.settings.items.filter(m => m.selected && m.type === FeatureCategories.Numerical.id).map(m => m.name);
-                let selected_columns = this.settings.items
-                    .filter(m => m.selected)
-                    .map(m => m.name)
-                    .filter((col) => columnSet.has(col));
+                let selected_columns = defaultSelectedFeatureColumns(
+                    knownColumns,
+                    target,
+                    this.settings.items
+                );
 
                 // Safety: exclude high cardinality strings to prevent OHE explosion
                 try {
                     selected_columns = selected_columns.filter((col) => {
-                        if (!columnSet.has(col)) return false;
                         if (inferColumnDtype(trainingRows, col) !== 'string') return true;
                         return new Set(columnValuesFromRows(trainingRows, col)).size <= 20;
                     });
+                    selected_columns = defaultSelectedFeatureColumns(
+                        knownColumns,
+                        target,
+                        selected_columns.map((name) => ({ name, selected: true }))
+                    );
                 } catch (e) {
-                    selected_columns = this.settings.items
-                        .filter(m => m.selected)
-                        .map(m => m.name)
-                        .filter((col) => columnSet.has(col));
+                    selected_columns = defaultSelectedFeatureColumns(
+                        knownColumns,
+                        target,
+                        this.settings.items
+                    );
                 }
 
-                if (!selected_columns.includes(target)) {
-                    selected_columns.push(target);
+                let subsetRowData = subsetRows(trainingRows, selected_columns);
+                if (this.imputationOption === 1) {
+                    subsetRowData = dropRowsWithMissing(subsetRowData, selected_columns);
                 }
-
-                const subsetRowData = subsetRows(trainingRows, selected_columns);
+                if (!subsetRowData.length) {
+                    throw new Error(
+                        'All rows were removed during preprocessing (missing values or filters). Try “Mean and Mode” imputation or reload the dataset.'
+                    );
+                }
                 let filterd_dataset = markRaw(
                     buildDataFrameFromRows(danfo, subsetRowData, selected_columns)
                 );
+
+                // Get selected features and numeric columns
+                let numericColumns = this.settings.items
+                    .filter(m => m.selected && m.type === FeatureCategories.Numerical.id)
+                    .map(m => m.name);
+                if (!numericColumns.length) {
+                    numericColumns = selected_columns.filter(
+                        (col) =>
+                            String(col).toLowerCase() !== String(target).toLowerCase() &&
+                            inferColumnDtype(trainingRows, col) !== 'string'
+                    );
+                }
                 numericColumns = numericColumns.filter(c => selected_columns.includes(c));
                 if (this.useOutliers && numericColumns.length > 0) {
                     const threshold = this.outlierMethod === 'zscore' ? Number(this.outlierZThreshold) || 3 : undefined;
@@ -738,10 +768,9 @@ export default {
                         });
                     }
                 }
-                filterd_dataset = handle_missing_values(
-                    filterd_dataset,
-                    this.imputationOption !== 1
-                )
+                if (this.imputationOption !== 1) {
+                    filterd_dataset = handle_missing_values(filterd_dataset, true);
+                }
                 filterd_dataset = applyDataTransformation(filterd_dataset, numericColumns, this.settings.transformationsList);
                 if (this.dataScalingBehavior) {
                     let transformations = []
@@ -763,7 +792,10 @@ export default {
                     }
                 }
 
-                const processedRows = dataframeToRows(filterd_dataset, selected_columns);
+                let processedRows = dataframeToRows(filterd_dataset, selected_columns);
+                if (!processedRows.length) {
+                    processedRows = subsetRowData;
+                }
                 let targets = seriesFromRows(processedRows, target);
                 try {
                     const fromFrame = dfColumn(filterd_dataset, target, selected_columns);
@@ -774,7 +806,14 @@ export default {
                     // keep row-based series
                 }
 
-                const featureColumns = selected_columns.filter((c) => c !== target);
+                const featureColumns = selected_columns.filter(
+                    (c) => String(c).toLowerCase() !== String(target).toLowerCase()
+                );
+                if (!featureColumns.length) {
+                    throw new Error(
+                        'No feature columns to train on. Reload the iris preset and ensure predictors (e.g. sepallength) are selected in the sidebar.'
+                    );
+                }
                 try {
                     filterd_dataset.drop({ columns: target, inplace: true });
                 } catch {

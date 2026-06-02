@@ -10,6 +10,9 @@ import {
     subsetRows,
     seriesFromRows,
     buildDataFrameFromRows,
+    resolveTrainingRows,
+    defaultSelectedFeatureColumns,
+    dropRowsWithMissing,
 } from '../../src/utils/dataset_source';
 
 describe('dataset_source.js', () => {
@@ -83,6 +86,40 @@ describe('dataset_source.js', () => {
         const df = createTrainingDataFrame(danfo, store);
         expect(df.columns).toContain('Species');
         expect(df.columns).toContain('sepallength');
+    });
+
+    it('defaultSelectedFeatureColumns uses all predictors when none selected', () => {
+        const cols = ['sepallength', 'sepalwidth', 'petallength', 'petalwidth', 'Species'];
+        expect(defaultSelectedFeatureColumns(cols, 'Species', [])).toEqual(cols);
+        expect(
+            defaultSelectedFeatureColumns(cols, 'Species', [{ name: 'Species', selected: true }])
+        ).toEqual(cols);
+    });
+
+    it('resolveTrainingRows hydrates from stored dataframe when rawData is empty', () => {
+        const store = {
+            rawData: [],
+            datasetColumns: ['Species', 'x'],
+            getDataset: {
+                columns: [],
+                shape: [1, 2],
+                $dataIncolumnFormat: [['Setosa'], [1]],
+            },
+            setRawData: vi.fn(),
+            setDatasetColumns: vi.fn(),
+        };
+        const { rows, columnNames } = resolveTrainingRows(store);
+        expect(columnNames).toEqual(['Species', 'x']);
+        expect(rows).toEqual([{ Species: 'Setosa', x: 1 }]);
+        expect(store.setRawData).toHaveBeenCalled();
+    });
+
+    it('dropRowsWithMissing removes incomplete rows', () => {
+        const rows = [
+            { a: 1, b: 2 },
+            { a: null, b: 3 },
+        ];
+        expect(dropRowsWithMissing(rows, ['a', 'b'])).toEqual([{ a: 1, b: 2 }]);
     });
 
     it('sampleRows and subsetRows preserve column values', () => {

@@ -145,12 +145,17 @@ export default {
       sidebar.modelOption = config.algoId
       sidebar.crossValidationOption = config.crossValidationOption
 
-      // ── 4. Let checkmodelTask build the correct modelOptions + modelName ──
+      // ── 4. Ensure feature list exists (wizard can train before sidebar upload hook) ──
+      if (!this.appStore.items?.length && sidebar.generateTargetDropdown) {
+        sidebar.generateTargetDropdown()
+      }
+
+      // ── 5. Let checkmodelTask build the correct modelOptions + modelName ──
       //      (also calls getDefaultModelConfiguration which gives full config
       //       structure including the `values` arrays selects need)
       sidebar.checkmodelTask()
 
-      // ── 5. Apply wizard's custom hyperparameter values on top of defaults ──
+      // ── 6. Apply wizard's custom hyperparameter values on top of defaults ──
       if (config.modelConfigurations && sidebar.modelConfigurations) {
         for (const key of Object.keys(config.modelConfigurations)) {
           if (sidebar.modelConfigurations[key] !== undefined) {

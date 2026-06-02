@@ -103,7 +103,10 @@ export function inferColumnDtype(rows, columnName) {
  */
 export function buildDataFrameFromRows(danfo, rows, columnNames) {
     if (!rows.length || !columnNames.length) {
-        throw new Error('Cannot build a dataset with no rows or columns.');
+        const detail = !rows.length ? 'no rows' : 'no columns';
+        throw new Error(
+            `Cannot build a dataset with ${detail}. Reload the iris preset (or your CSV) and ensure at least one feature column is selected besides the target.`
+        );
     }
     let df = new danfo.DataFrame(rowsToColumnDict(rows, columnNames));
     if (!getFrameColumns(df).length) {
@@ -174,18 +177,22 @@ export function dataframeToRows(frame, columnNames = null) {
 }
 
 /**
- * Build a training DataFrame from raw rows and explicit column metadata.
- * @param {Awaited<ReturnType<typeof import('@/utils/danfo_loader').getDanfo>>} danfo
+ * Load row objects for training from Pinia (rawData) or the stored DataFrame.
  * @param {import('@/stores/settings').settingStore} settings
  */
-export function createTrainingDataFrame(danfo, settings) {
+export function resolveTrainingRows(settings) {
     let rows = normalizeRawRows(settings.rawData);
     let columnNames = getStoredColumnNames(settings, rows);
 
     if (rows.length === 0) {
-        const existing = unwrapFrame(settings.getDataset);
+        const existing = unwrapFrame(settings.getDataset ?? settings.df);
         if (existing) {
-            columnNames = columnNames.length ? columnNames : getFrameColumns(existing);
+            if (!columnNames.length) {
+                columnNames = getStoredColumnNames(settings);
+            }
+            if (!columnNames.length) {
+                columnNames = getFrameColumns(existing);
+            }
             rows = dataframeToRows(existing, columnNames);
         }
     }
@@ -194,21 +201,75 @@ export function createTrainingDataFrame(danfo, settings) {
         columnNames = Object.keys(rows[0]);
     }
 
+    if (rows.length > 0) {
+        settings.setRawData(rows);
+        if (columnNames.length > 0) {
+            settings.setDatasetColumns(columnNames);
+        }
+    }
+
+    return { rows, columnNames };
+}
+
+/**
+ * Predictor + target columns for training when the wizard/sidebar has no selected features.
+ */
+export function defaultSelectedFeatureColumns(knownColumns, target, items = []) {
+    const columnSet = new Set(knownColumns);
+    const targetLower = String(target ?? '').toLowerCase();
+    let selected = (items || [])
+        .filter((m) => m.selected)
+        .map((m) => m.name)
+        .filter((col) => columnSet.has(col));
+    const predictors = selected.filter(
+        (c) => String(c).toLowerCase() !== targetLower
+    );
+    if (predictors.length === 0) {
+        selected = knownColumns.filter(
+            (c) => String(c).toLowerCase() !== targetLower
+        );
+    }
+    const hasTarget = selected.some(
+        (c) => String(c).toLowerCase() === targetLower
+    );
+    if (!hasTarget && target) {
+        const match = knownColumns.find(
+            (c) => String(c).toLowerCase() === targetLower
+        );
+        selected.push(match ?? target);
+    }
+    return selected;
+}
+
+/** Delete rows with null/empty values in any of the given columns. */
+export function dropRowsWithMissing(rows, columnNames) {
+    return rows.filter((row) =>
+        columnNames.every((col) => {
+            const value = row[col];
+            return (
+                value != null &&
+                value !== '' &&
+                !(typeof value === 'number' && Number.isNaN(value))
+            );
+        })
+    );
+}
+
+/**
+ * Build a training DataFrame from raw rows and explicit column metadata.
+ * @param {Awaited<ReturnType<typeof import('@/utils/danfo_loader').getDanfo>>} danfo
+ * @param {import('@/stores/settings').settingStore} settings
+ */
+export function createTrainingDataFrame(danfo, settings) {
+    const { rows, columnNames } = resolveTrainingRows(settings);
+
     if (rows.length === 0 || columnNames.length === 0) {
         throw new Error(
             'Dataset is not loaded correctly. Choose the iris preset again (or upload your CSV), then train.'
         );
     }
 
-    settings.setRawData(rows);
-    if (columnNames.length > 0) {
-        settings.setDatasetColumns(columnNames);
-    }
-
-    let df = new danfo.DataFrame(rowsToColumnDict(rows, columnNames));
-    if (!getFrameColumns(df).length) {
-        df = new danfo.DataFrame(rows, { columns: columnNames });
-    }
+    let df = buildDataFrameFromRows(danfo, rows, columnNames);
     if (!getFrameColumns(df).length) {
         throw new Error(
             `Failed to build the training dataset (expected columns: ${columnNames.join(', ')}). Reload the dataset and try again.`

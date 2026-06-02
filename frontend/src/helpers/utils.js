@@ -430,7 +430,8 @@ export function handle_missing_values(data_frame, impute = false) {
         data_frame = data_frame.fillNa(string_column_modes, { columns: string_columns })
         data_frame = data_frame.fillNa(numeric_column_means, { columns: numeric_columns })
     } else {
-        data_frame.dropNa({ axis: 1, inplace: true })
+        // axis 0 = drop rows with missing values ("Delete rows" imputation)
+        data_frame.dropNa({ axis: 0, inplace: true })
     }
     return data_frame
 }
