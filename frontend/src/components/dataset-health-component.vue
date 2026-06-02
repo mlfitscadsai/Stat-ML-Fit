@@ -92,14 +92,22 @@
                     </p>
                 </div>
             </header>
-            <div v-if="readiness.blockers.length || readiness.warnings.length" class="dh-warning-stack">
+            <div v-if="readinessIssues.length || supplementalWarnings.length" class="dh-warning-stack">
                 <div
-                    v-for="issue in readiness.blockers.concat(readiness.warnings).slice(0, 5)"
+                    v-for="issue in readinessIssues"
                     :key="`${issue.code}-${issue.column || issue.message}`"
                     class="dh-warning"
                 >
                     <span class="dh-warning__icon"><i class="fas fa-triangle-exclamation"></i></span>
                     <span class="dh-warning__text">{{ issue.message }}</span>
+                </div>
+                <div
+                    v-for="(message, index) in supplementalWarnings"
+                    :key="`supplemental-${index}-${message}`"
+                    class="dh-warning"
+                >
+                    <span class="dh-warning__icon"><i class="fas fa-triangle-exclamation"></i></span>
+                    <span class="dh-warning__text">{{ message }}</span>
                 </div>
             </div>
             <div v-else class="dh-ok-banner">
@@ -129,21 +137,6 @@
                 </div>
             </article>
         </section>
-
-        <!-- ░░ WARNINGS ░░ -->
-        <transition name="dh-fade">
-            <div v-if="warnings.length" class="dh-warning-stack">
-                <div v-for="(w, i) in warnings" :key="i" class="dh-warning">
-                    <span class="dh-warning__icon"><i class="fas fa-triangle-exclamation"></i></span>
-                    <span class="dh-warning__text">{{ w }}</span>
-                </div>
-            </div>
-            <div v-else class="dh-ok-banner">
-                <span class="dh-ok-banner__pulse"></span>
-                <i class="fas fa-circle-check"></i>
-                <span>All clear &mdash; no critical data quality warnings detected.</span>
-            </div>
-        </transition>
 
         <!-- ░░ OUTLIER DETECTION PANEL ░░ -->
         <section v-if="widgetVisible.outliers" class="dh-panel dh-outlier-panel">
@@ -404,6 +397,20 @@ export default {
                 { high: 0, medium: 0, low: 0 }
             );
         },
+        readinessIssues() {
+            if (!this.readiness) return [];
+            return this.readiness.blockers.concat(this.readiness.warnings).slice(0, 5);
+        },
+        /** Feature-level warnings not already covered by ML readiness. */
+        supplementalWarnings() {
+            if (!this.readiness) return this.warnings;
+            const covered = new Set(
+                this.readiness.blockers
+                    .concat(this.readiness.warnings)
+                    .map((issue) => issue.message)
+            );
+            return this.warnings.filter((message) => !covered.has(message));
+        },
         kpiTiles() {
             const rows = this.healthSummary.rows || 0;
             const cols = this.healthSummary.columns || 0;
@@ -554,9 +561,7 @@ export default {
                 target: this.settings.modelTarget,
                 taskMode: this.settings.getTaskMode,
             });
-            this.warnings = this.readiness.blockers
-                .concat(this.readiness.warnings)
-                .map((issue) => issue.message);
+            this.warnings = [];
             this.renderKey++;
             this.lastUpdated = Date.now();
             this.nowTick = Date.now();
@@ -647,6 +652,7 @@ export default {
             const numRows = df.shape[0];
             const numCols = columns.length;
 
+            this.warnings = [];
             this.skewnessData = {};
             this.numericColumns = [];
             let totalMissing = 0;
