@@ -25,6 +25,18 @@ describe('dataset_source.js', () => {
         expect(hasLoadedDataset(settings)).toBe(true);
     });
 
+    it('setDatasetColumns ignores empty arrays so column names are not wiped', () => {
+        const store = {
+            datasetColumns: ['Species', 'sepallength'],
+            setDatasetColumns(columns) {
+                if (!Array.isArray(columns) || columns.length === 0) return;
+                this.datasetColumns = [...columns];
+            },
+        };
+        store.setDatasetColumns([]);
+        expect(store.datasetColumns).toEqual(['Species', 'sepallength']);
+    });
+
     it('getStoredColumnNames prefers datasetColumns', () => {
         const settings = {
             datasetColumns: ['Species'],

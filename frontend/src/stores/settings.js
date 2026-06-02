@@ -115,7 +115,10 @@ export const settingStore = defineStore('app', {
             this.datasetColumns = [];
         },
         setDatasetColumns(columns) {
-            this.datasetColumns = Array.isArray(columns) ? [...columns] : [];
+            if (!Array.isArray(columns) || columns.length === 0) {
+                return;
+            }
+            this.datasetColumns = [...columns];
         },
         increaseCounter() {
             this.counter++;

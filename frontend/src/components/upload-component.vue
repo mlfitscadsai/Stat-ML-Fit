@@ -161,9 +161,24 @@ export default {
         async initDataframe(dataset, name) {
             this.settings.resetFeatures();
             this.settings.setDatasetName(name);
-            this.settings.setDatasetShape({ count: dataset.$data.length, columns: dataset.columns.length });
-            let df = await dataset.sample(dataset.$data.length, { seed: this.settings.getSeed });
-            this.settings.setDatasetColumns(dataset.columns);
+            const rows = Array.isArray(this.settings.rawData) ? this.settings.rawData : [];
+            const columnNames =
+                this.settings.datasetColumns?.length > 0
+                    ? [...this.settings.datasetColumns]
+                    : rows[0]
+                      ? Object.keys(rows[0])
+                      : Array.isArray(dataset.columns)
+                        ? [...dataset.columns]
+                        : [];
+            const rowCount = rows.length || dataset.$data?.length || dataset.shape?.[0] || 0;
+            this.settings.setDatasetShape({
+                count: rowCount,
+                columns: columnNames.length,
+            });
+            if (columnNames.length > 0) {
+                this.settings.setDatasetColumns(columnNames);
+            }
+            let df = await dataset.sample(rowCount || dataset.$data.length, { seed: this.settings.getSeed });
             storeDataframeInPinia(this.settings, df);
             this.$emit('uploaded', true)
         },

@@ -115,7 +115,9 @@ export function createTrainingDataFrame(danfo, settings) {
     }
 
     settings.setRawData(rows);
-    settings.setDatasetColumns(columnNames);
+    if (columnNames.length > 0) {
+        settings.setDatasetColumns(columnNames);
+    }
 
     let df = new danfo.DataFrame(rowsToColumnDict(rows, columnNames));
     if (!getFrameColumns(df).length) {

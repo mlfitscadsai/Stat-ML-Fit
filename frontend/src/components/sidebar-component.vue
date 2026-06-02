@@ -439,10 +439,18 @@ export default {
         },
         generateTargetDropdown() {
             this.dataframe = this.settings.getDataset;
-            this.columns = this.settings.datasetColumns?.length
-                ? this.settings.datasetColumns
-                : this.dataframe.columns;
             const previewRows = normalizeRawRows(this.settings.rawData);
+            this.columns =
+                this.settings.datasetColumns?.length > 0
+                    ? [...this.settings.datasetColumns]
+                    : previewRows[0]
+                      ? Object.keys(previewRows[0])
+                      : getFrameColumns(this.dataframe).length
+                        ? getFrameColumns(this.dataframe)
+                        : [];
+            if (this.columns.length > 0) {
+                this.settings.setDatasetColumns(this.columns);
+            }
             this.featureSettings = this.columns.map((column, index) => {
                 let series = this.dataframe?.[column];
                 let isString = this.dataframe?.dtypes?.[index] === 'string';
@@ -572,15 +580,34 @@ export default {
                     })
                     return
                 }
+                let knownColumns = getStoredColumnNames(this.settings);
+                if (!knownColumns.length && Array.isArray(this.columns) && this.columns.length > 0) {
+                    knownColumns = [...this.columns];
+                    this.settings.setDatasetColumns(knownColumns);
+                }
+                if (!knownColumns.length) {
+                    const preview = normalizeRawRows(this.settings.rawData);
+                    if (preview[0]) {
+                        knownColumns = Object.keys(preview[0]);
+                        this.settings.setRawData(preview);
+                        this.settings.setDatasetColumns(knownColumns);
+                    }
+                }
+                if (!knownColumns.length) {
+                    throw new Error(
+                        'Dataset columns are missing. In the sidebar, choose the iris preset again (or re-upload your CSV), then train.'
+                    );
+                }
+
                 const danfo = await getDanfo();
                 const trainingFrame = createTrainingDataFrame(danfo, this.settings);
                 this.dataframe = markRaw(trainingFrame);
                 storeDataframeInPinia(this.settings, trainingFrame);
 
-                const columnNames = getFrameColumns(this.dataframe);
-                const knownColumns = columnNames.length
-                    ? columnNames
-                    : getStoredColumnNames(this.settings);
+                const frameColumns = getFrameColumns(this.dataframe);
+                if (frameColumns.length) {
+                    knownColumns = frameColumns;
+                }
                 const resolvedTarget = resolveDataFrameColumnName(
                     this.dataframe,
                     targetName,
@@ -602,10 +629,13 @@ export default {
                     || this.settings.items.find(
                         (feature) => feature.name?.toLowerCase() === resolvedTarget.toLowerCase()
                     )
+                const targetValues =
+                    dfColumn(this.dataframe, resolvedTarget, knownColumns)?.values ??
+                    normalizeRawRows(this.settings.rawData).map((row) => row[resolvedTarget]);
                 const modeValidation = validateModeCompatibility(
                     this.taskMode,
                     targetFeature?.type,
-                    dfColumn(this.dataframe, resolvedTarget)?.values ?? []
+                    targetValues
                 )
                 if (!modeValidation.valid) {
                     this.Toast.open({
