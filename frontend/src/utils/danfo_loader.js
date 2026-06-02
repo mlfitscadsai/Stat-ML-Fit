@@ -1,9 +1,6 @@
 let danfoPromise = null;
 let plotlyPromise = null;
 
-/** Official browser build — lib/bundle.js is a webpack IIFE without ESM exports. */
-const DANFO_ENTRY = 'danfojs/dist/danfojs-browser/src/index.js';
-
 function pickDanfoNamespace(mod) {
     if (!mod) return null;
     if (typeof mod.DataFrame === 'function') return mod;
@@ -23,7 +20,8 @@ function resolveDanfoModule(mod) {
 
 export const getDanfo = async () => {
     if (!danfoPromise) {
-        danfoPromise = import(/* @vite-ignore */ DANFO_ENTRY)
+        // String literal required so Vite/Rollup emit a hashed chunk (not a bare specifier).
+        danfoPromise = import('danfojs/dist/danfojs-browser/src/index.js')
             .then(resolveDanfoModule)
             .catch((err) => {
                 danfoPromise = null;

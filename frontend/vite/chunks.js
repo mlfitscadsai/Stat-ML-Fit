@@ -1,12 +1,13 @@
 const CHUNK_RULES = [
     { chunk: 'assistant-gemma', match: ['@huggingface/transformers', '@kessler/gemma-agent', 'onnxruntime'] },
+    { chunk: 'data-danfo', match: ['danfojs'] },
     { chunk: 'viz-plotly', match: ['plotly.js'] },
     { chunk: 'viz-highcharts', match: ['highcharts'] },
     { chunk: 'vendor-vue', match: ['vue', 'pinia', 'buefy', 'bulma'] },
 ];
 
 /** Packages that must not be merged into the shared vendor entry (TDZ / size). */
-const DEFER_TO_ROLLUP = ['@tensorflow/', 'danfojs/'];
+const DEFER_TO_ROLLUP = ['@tensorflow/'];
 
 export function manualChunkFor(id = '') {
     if (!id.includes('node_modules')) return undefined;
@@ -21,4 +22,4 @@ export function manualChunkFor(id = '') {
 }
 
 /** Heavy optional chunks — never modulepreload from index.html. */
-export const DEFERRED_PRELOAD_CHUNKS = ['assistant-gemma', 'danfo', 'tensorflow', 'viz-plotly'];
+export const DEFERRED_PRELOAD_CHUNKS = ['assistant-gemma', 'data-danfo', 'tensorflow', 'viz-plotly'];
