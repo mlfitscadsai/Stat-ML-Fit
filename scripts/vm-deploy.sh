@@ -58,7 +58,7 @@ if [[ "${SKIP_FRONTEND:-0}" != "1" ]]; then
   test -f dist/vendor/danfo.bundle.js || {
     echo "ERROR: missing dist/vendor/danfo.bundle.js (run prebuild copy-danfo-bundle)" >&2
     exit 1
-  fi
+  }
   test -f dist/webr/dist/webr.mjs || test -f public/webr/dist/webr.mjs || {
     echo "WARN: webr.mjs missing — in-browser R may be disabled until prebuild copies webr assets"
   }
