@@ -46,7 +46,7 @@
 
   <script type="module">
     window.addEventListener('load', async () => {
-      try {
+      async function initLocalWebR() {
         const baseUrl = new URL('/webr/dist/', window.location.href).href;
         const swUrl = new URL('/webr/', window.location.href).href;
         const { WebR } = await import(new URL('webr.mjs', baseUrl).href);
@@ -56,9 +56,25 @@
           interactive: false,
         });
         await webR.init();
-        window.webr = webR;
-      } catch (err) {
-        console.warn('WebR init failed (in-browser R features disabled):', err);
+        return webR;
+      }
+
+      async function initCdnWebR() {
+        const { WebR } = await import('https://webr.r-wasm.org/v0.4.3/webr.mjs');
+        const webR = new WebR({ interactive: false });
+        await webR.init();
+        return webR;
+      }
+
+      try {
+        window.webr = await initLocalWebR();
+      } catch (localErr) {
+        console.warn('Local WebR failed, trying CDN fallback:', localErr);
+        try {
+          window.webr = await initCdnWebR();
+        } catch (cdnErr) {
+          console.warn('WebR init failed (in-browser R features disabled):', cdnErr);
+        }
       }
     });
   </script>

@@ -22,7 +22,7 @@ export default defineConfig({
     },
 
     optimizeDeps: {
-        include: ['danfojs/dist/danfojs-browser/src/index.js'],
+        include: ['danfojs/dist/danfojs-browser/src/index.js', '@/utils/danfo_entry.js'],
     },
 
     server: {

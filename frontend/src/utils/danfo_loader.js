@@ -20,8 +20,7 @@ function resolveDanfoModule(mod) {
 
 export const getDanfo = async () => {
     if (!danfoPromise) {
-        // String literal required so Vite/Rollup emit a hashed chunk (not a bare specifier).
-        danfoPromise = import('danfojs/dist/danfojs-browser/src/index.js')
+        danfoPromise = import('@/utils/danfo_entry.js')
             .then(resolveDanfoModule)
             .catch((err) => {
                 danfoPromise = null;
