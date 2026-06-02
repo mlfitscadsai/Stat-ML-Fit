@@ -172,6 +172,11 @@ import { TASK_MODES, detectTaskFromTarget, resolveTaskMode, validateModeCompatib
 import { getDanfo } from '@/utils/danfo_loader';
 import { dfColumn, resolveDataFrameColumnName } from '@/utils/danfo_frame';
 import {
+    createTrainingDataFrame,
+    getDataframeRowCount,
+    hasLoadedDataset,
+} from '@/utils/dataset_source';
+import {
     buildCsvBlobFromDataframe,
     buildCsvBlobFromRawRows,
     fetchHpcHealth,
@@ -275,7 +280,7 @@ export default {
     },
     computed: {
         hasDataset() {
-            return Array.isArray(this.settings.rawData) && this.settings.rawData.length > 0;
+            return hasLoadedDataset(this.settings);
         },
         canUploadToHpc() {
             return this.useHPC && this.hasDataset && this.hpcConfigured !== false && !this.hpcUploading;
@@ -514,10 +519,10 @@ export default {
         },
         async train() {
             try {
-                if (!this.settings.items?.length && this.settings.rawData?.length) {
+                if (!this.settings.items?.length && hasLoadedDataset(this.settings)) {
                     this.generateTargetDropdown();
                 }
-                if (!this.settings.rawData || this.settings.rawData.length === 0) {
+                if (!hasLoadedDataset(this.settings)) {
                     this.Toast.open({
                         duration: 3000,
                         message: 'Please upload/select a dataset first.',
@@ -535,7 +540,7 @@ export default {
                     return
                 }
                 const danfo = await getDanfo();
-                this.dataframe = new danfo.DataFrame(this.settings.rawData);
+                this.dataframe = createTrainingDataFrame(danfo, this.settings);
                 const resolvedTarget = resolveDataFrameColumnName(this.dataframe, targetName);
                 if (!this.dataframe.columns?.includes(resolvedTarget)) {
                     const available = (this.dataframe.columns || []).join(', ') || '(none)';
@@ -589,7 +594,8 @@ export default {
                 let seed = +this.seed;
                 this.settings.setSeed(seed)
                 let categoricalFeatures = []
-                let dataset = await this.dataframe.sample(this.dataframe.$data.length, { seed: seed });
+                const rowCount = getDataframeRowCount(this.dataframe);
+                let dataset = await this.dataframe.sample(rowCount, { seed: seed });
 
                 const target = resolvedTarget;
 

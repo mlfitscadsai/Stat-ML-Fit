@@ -161,6 +161,7 @@ export default {
 
       const validation = validateConfig({
         rawData: this.appStore.rawData,
+        dataframe: this.appStore.df,
         target: config.target,
         algoId: config.algoId,
       })

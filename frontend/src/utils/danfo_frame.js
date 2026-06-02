@@ -2,7 +2,7 @@
  * Safe column access for danfo DataFrames (script bundle, ESM, and Vue-reactive instances).
  */
 
-function unwrapFrame(frame) {
+export function unwrapFrame(frame) {
     if (frame == null) return frame;
     if (typeof frame.__v_raw !== 'undefined') return frame.__v_raw;
     return frame;

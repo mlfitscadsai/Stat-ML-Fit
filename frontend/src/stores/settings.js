@@ -7,7 +7,7 @@ export const settingStore = defineStore('app', {
         counter: 1,
         df: {},
         id: null,
-        rawData: {},
+        rawData: [],
         features: [],
         transformations: [],
         classTransformations: [],

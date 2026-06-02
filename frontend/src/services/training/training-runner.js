@@ -1,5 +1,6 @@
 import { recommendModels } from '@/services/recommendations/recommendation-service';
 import { pollJob } from '@/services/jobs/job-client';
+import { hasLoadedDataset } from '@/utils/dataset_source';
 
 const PERCENTAGE_METRICS = new Set([
     'accuracy',
@@ -12,7 +13,7 @@ const PERCENTAGE_METRICS = new Set([
 ]);
 
 export function validateConfig(config = {}) {
-    if (!config.rawData || config.rawData.length === 0) {
+    if (!hasLoadedDataset({ rawData: config.rawData, getDataset: config.dataframe, df: config.dataframe })) {
         return { valid: false, message: 'Please upload/select a dataset before training.' };
     }
     if (!config.target) {
