@@ -88,6 +88,9 @@ bash scripts/vm-deploy.sh
 |----------|--------|
 | `SKIP_GIT=1` | Do not `git pull` |
 | `SKIP_FRONTEND=1` | Skip `npm ci` / `npm run build` |
+| `NPM_IGNORE_SCRIPTS=0` | Run full `npm ci` postinstall scripts (downloads `onnxruntime-node` from nuget; needs outbound HTTPS) |
+
+By default, `vm-deploy.sh` runs `npm ci --ignore-scripts` so the static build does not download the Node ONNX GPU binary (the app uses **onnxruntime-web** in the browser for Gemma).
 | `SKIP_DOCKER=1` | Skip Docker rebuild |
 | `SKIP_NGINX=1` | Skip nginx config install |
 

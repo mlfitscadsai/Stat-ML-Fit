@@ -4,10 +4,11 @@ FROM node:18-alpine AS build-stage
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+# Browser build uses onnxruntime-web WASM; skip onnxruntime-node postinstall download.
+RUN npm ci --ignore-scripts
 
 COPY . .
-RUN npm run build
+RUN npm run prebuild && npm run build
 
 # Production stage
 FROM nginx:stable-alpine

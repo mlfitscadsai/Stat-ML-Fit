@@ -7,6 +7,7 @@
     "predev": "node scripts/copy-webr-assets.mjs && node scripts/copy-danfo-bundle.mjs",
     "prebuild": "node scripts/copy-webr-assets.mjs && node scripts/copy-danfo-bundle.mjs",
     "build": "vite build && node vite/check-bundle-budget.mjs",
+    "ci:deploy": "npm ci --ignore-scripts && npm run prebuild && npm run build",
     "preview": "vite preview",
     "test:mode": "node --experimental-default-type=module --test tests/task_mode.test.js",
     "test:unit": "vitest run",

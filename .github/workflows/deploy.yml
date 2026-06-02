@@ -94,7 +94,7 @@ jobs:
           CI: true
           DOCKER_BUILD: true
           VITE_API_BASE: /api
-        run: npm ci && npm run build
+        run: npm ci --ignore-scripts && npm run prebuild && npm run build
 
       - name: Sync dist to nginx document root
         run: |
@@ -166,7 +166,7 @@ jobs:
           CI: true
           DOCKER_BUILD: true
           VITE_API_BASE: /api
-        run: npm ci && npm run build
+        run: npm ci --ignore-scripts && npm run prebuild && npm run build
 
       - name: Check SSH secrets
         run: |

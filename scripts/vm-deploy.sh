@@ -44,8 +44,17 @@ if [[ "${SKIP_FRONTEND:-0}" != "1" ]]; then
   cd frontend
   export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
   export CI=true DOCKER_BUILD=true VITE_API_BASE
-  npm ci
-  npm run build
+  # Gemma uses onnxruntime-web (WASM) in the browser only. onnxruntime-node postinstall
+  # downloads a large GPU binary from nuget.org and often times out on restricted VMs.
+  if [[ "${NPM_IGNORE_SCRIPTS:-1}" == "1" ]]; then
+    echo "    npm ci --ignore-scripts (skip onnxruntime-node GPU download)"
+    npm ci --ignore-scripts
+    npm run prebuild
+    npm run build
+  else
+    npm ci
+    npm run build
+  fi
   test -f dist/index.html
   if grep -rq 'danfojs/dist/danfojs-browser' dist/assets/*.js 2>/dev/null; then
     echo "ERROR: frontend dist still contains bare danfojs import (rebuild failed)." >&2
