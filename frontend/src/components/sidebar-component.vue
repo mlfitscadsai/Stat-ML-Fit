@@ -194,13 +194,20 @@ import { markRaw } from 'vue';
 import { getDanfo } from '@/utils/danfo_loader';
 import { dfColumn, getFrameColumnNames, resolveDataFrameColumnName } from '@/utils/danfo_frame';
 import {
+    asDanfoSeries,
+    buildDataFrameFromRows,
+    columnValuesFromRows,
     createTrainingDataFrame,
-    getDataframeRowCount,
+    dataframeToRows,
     getFrameColumns,
     getStoredColumnNames,
     hasLoadedDataset,
+    inferColumnDtype,
     normalizeRawRows,
+    sampleRows,
+    seriesFromRows,
     storeDataframeInPinia,
+    subsetRows,
 } from '@/utils/dataset_source';
 import {
     buildCsvBlobFromDataframe,
@@ -671,34 +678,48 @@ export default {
                 let seed = +this.seed;
                 this.settings.setSeed(seed)
                 let categoricalFeatures = []
-                const rowCount = getDataframeRowCount(this.dataframe);
-                let dataset = await this.dataframe.sample(rowCount, { seed: seed });
 
                 const target = resolvedTarget;
+                let trainingRows = sampleRows(normalizeRawRows(this.settings.rawData), seed);
+                if (!trainingRows.length) {
+                    throw new Error(
+                        'No training rows in memory. Choose the iris preset again (or re-upload your CSV), then train.'
+                    );
+                }
+                this.dataframe = markRaw(buildDataFrameFromRows(danfo, trainingRows, knownColumns));
+                storeDataframeInPinia(this.settings, this.dataframe);
+
+                const columnSet = new Set(knownColumns);
 
                 // Get selected features and numeric columns
                 let numericColumns = this.settings.items.filter(m => m.selected && m.type === FeatureCategories.Numerical.id).map(m => m.name);
-                let selected_columns = this.settings.items.filter(m => m.selected).map(m => m.name)
+                let selected_columns = this.settings.items
+                    .filter(m => m.selected)
+                    .map(m => m.name)
+                    .filter((col) => columnSet.has(col));
 
-                // Safety: try to exclude high cardinality strings to prevent OHE explosion
+                // Safety: exclude high cardinality strings to prevent OHE explosion
                 try {
-                    selected_columns = selected_columns.filter(col => {
-                        if (!dataset.columns.includes(col)) return false;
-                        if (dataset[col].dtype !== 'string') return true;
-                        return dataset[col].unique().values.length <= 20;
+                    selected_columns = selected_columns.filter((col) => {
+                        if (!columnSet.has(col)) return false;
+                        if (inferColumnDtype(trainingRows, col) !== 'string') return true;
+                        return new Set(columnValuesFromRows(trainingRows, col)).size <= 20;
                     });
-                } catch(e) {
-                    // If filtering fails, keep all selected columns
-                    selected_columns = this.settings.items.filter(m => m.selected).map(m => m.name)
+                } catch (e) {
+                    selected_columns = this.settings.items
+                        .filter(m => m.selected)
+                        .map(m => m.name)
+                        .filter((col) => columnSet.has(col));
                 }
 
-                const col_index = selected_columns.findIndex(m => m === target)
-                if (col_index === -1) {
-                    selected_columns.push(target)
+                if (!selected_columns.includes(target)) {
+                    selected_columns.push(target);
                 }
 
-                // Filter to selected columns first, THEN handle missing values
-                let filterd_dataset = dataset.loc({ columns: selected_columns })
+                const subsetRowData = subsetRows(trainingRows, selected_columns);
+                let filterd_dataset = markRaw(
+                    buildDataFrameFromRows(danfo, subsetRowData, selected_columns)
+                );
                 numericColumns = numericColumns.filter(c => selected_columns.includes(c));
                 if (this.useOutliers && numericColumns.length > 0) {
                     const threshold = this.outlierMethod === 'zscore' ? Number(this.outlierZThreshold) || 3 : undefined;
@@ -742,17 +763,30 @@ export default {
                     }
                 }
 
+                const processedRows = dataframeToRows(filterd_dataset, selected_columns);
+                let targets = seriesFromRows(processedRows, target);
+                try {
+                    const fromFrame = dfColumn(filterd_dataset, target, selected_columns);
+                    if (fromFrame?.values?.length === processedRows.length) {
+                        targets = fromFrame;
+                    }
+                } catch {
+                    // keep row-based series
+                }
 
-                const targets = dfColumn(
-                    filterd_dataset,
-                    target,
-                    getFrameColumns(filterd_dataset).length
-                        ? getFrameColumns(filterd_dataset)
-                        : knownColumns
-                )
-                filterd_dataset.drop({ columns: target, inplace: true })
-
-
+                const featureColumns = selected_columns.filter((c) => c !== target);
+                try {
+                    filterd_dataset.drop({ columns: target, inplace: true });
+                } catch {
+                    filterd_dataset = markRaw(
+                        buildDataFrameFromRows(
+                            danfo,
+                            subsetRows(processedRows, featureColumns),
+                            featureColumns
+                        )
+                    );
+                }
+                targets = asDanfoSeries(danfo, targets, target);
 
                 const cross_validation_setting = this.crossValidationOption;
 

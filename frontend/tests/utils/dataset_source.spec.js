@@ -6,6 +6,10 @@ import {
     createTrainingDataFrame,
     getStoredColumnNames,
     rowsToColumnDict,
+    sampleRows,
+    subsetRows,
+    seriesFromRows,
+    buildDataFrameFromRows,
 } from '../../src/utils/dataset_source';
 
 describe('dataset_source.js', () => {
@@ -79,6 +83,31 @@ describe('dataset_source.js', () => {
         const df = createTrainingDataFrame(danfo, store);
         expect(df.columns).toContain('Species');
         expect(df.columns).toContain('sepallength');
+    });
+
+    it('sampleRows and subsetRows preserve column values', () => {
+        const rows = [
+            { Species: 'A', x: 1 },
+            { Species: 'B', x: 2 },
+        ];
+        const sampled = sampleRows(rows, 42);
+        expect(sampled).toHaveLength(2);
+        const subset = subsetRows(sampled, ['Species']);
+        expect(seriesFromRows(subset, 'Species').values).toEqual(
+            sampled.map((r) => r.Species)
+        );
+    });
+
+    it('buildDataFrameFromRows sets column metadata when bundle omits .columns', () => {
+        function MockDataFrame(data) {
+            this.columns = [];
+            this.$dataIncolumnFormat = Object.values(data);
+            this.shape = [data.Species?.length ?? 0, Object.keys(data).length];
+        }
+        const danfo = { DataFrame: MockDataFrame };
+        const rows = [{ Species: 'Setosa', x: 1 }];
+        const df = buildDataFrameFromRows(danfo, rows, ['Species', 'x']);
+        expect(df.$columns).toEqual(['Species', 'x']);
     });
 
     it('dataframeToRows extracts row objects', () => {

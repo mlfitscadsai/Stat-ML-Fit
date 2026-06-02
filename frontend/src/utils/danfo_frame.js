@@ -140,7 +140,17 @@ export function dfColumn(frame, columnName, fallbackColumnNames = null) {
         return series;
     }
 
-    const available = Array.isArray(cols) && cols.length ? cols.join(', ') : '(none)';
+    const idx = nameList.indexOf(resolvedName);
+    if (idx >= 0 && Array.isArray(raw.$dataIncolumnFormat?.[idx])) {
+        return {
+            values: raw.$dataIncolumnFormat[idx],
+            dtype: raw.dtypes?.[idx] ?? 'float32',
+            columns: [resolvedName],
+        };
+    }
+
+    const available =
+        (nameList?.length ? nameList : cols).join(', ') || '(none)';
     throw new Error(
         `Column "${columnName}" is not available on this dataset. Available columns: ${available}`
     );
