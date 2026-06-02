@@ -51,22 +51,34 @@
                         <i class="fas fa-chevron-down sidebar-details__icon"></i>
                     </summary>
                     <div class="sidebar-details__content">
-                        <b-field class="sidebar-field" label="Model">
+                        <b-field class="sidebar-field sidebar-field--model" label="Model">
                             <div class="sidebar-model-row">
-                                <b-select :disabled="tuneModel" :expanded="true" v-model="modelOption" size="is-small">
-                                    <option v-for="option in modelOptions" :value="option.id" :key="option.id">
-                                        {{ option.label }}
-                                    </option>
-                                </b-select>
-                                <b-button
+                                <div class="sidebar-model-row__select">
+                                    <b-select
+                                        :disabled="tuneModel"
+                                        :expanded="true"
+                                        v-model="modelOption"
+                                        size="is-small"
+                                    >
+                                        <option v-for="option in modelOptions" :value="option.id" :key="option.id">
+                                            {{ option.label }}
+                                        </option>
+                                    </b-select>
+                                </div>
+                                <button
                                     type="button"
-                                    @click="configureModel"
-                                    size="is-small"
-                                    class="model-config-btn"
-                                    icon-pack="fas"
-                                    :icon-left="!tuneModel ? 'cog' : 'arrow-left'"
+                                    class="sidebar-model-settings-btn"
+                                    :class="{ 'sidebar-model-settings-btn--active': tuneModel }"
+                                    :title="tuneModel ? 'Back to model list' : 'Tune hyperparameters'"
                                     :aria-label="tuneModel ? 'Back to model list' : 'Configure model hyperparameters'"
-                                />
+                                    @click="configureModel"
+                                >
+                                    <i
+                                        class="fas"
+                                        :class="tuneModel ? 'fa-arrow-left' : 'fa-cog'"
+                                        aria-hidden="true"
+                                    ></i>
+                                </button>
                             </div>
                         </b-field>
 
