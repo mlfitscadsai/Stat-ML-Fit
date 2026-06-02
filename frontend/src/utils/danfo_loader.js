@@ -1,17 +1,34 @@
 let danfoPromise = null;
 let plotlyPromise = null;
 
+/** Official browser build — lib/bundle.js is a webpack IIFE without ESM exports. */
+const DANFO_ENTRY = 'danfojs/dist/danfojs-browser/src/index.js';
+
+function pickDanfoNamespace(mod) {
+    if (!mod) return null;
+    if (typeof mod.DataFrame === 'function') return mod;
+    if (typeof mod.default?.DataFrame === 'function') return mod.default;
+    if (typeof mod.dfd?.DataFrame === 'function') return mod.dfd;
+    if (typeof mod.default?.dfd?.DataFrame === 'function') return mod.default.dfd;
+    const globalDfd = typeof globalThis !== 'undefined' ? globalThis.dfd : null;
+    if (typeof globalDfd?.DataFrame === 'function') return globalDfd;
+    return null;
+}
+
 function resolveDanfoModule(mod) {
-    if (mod?.dfd?.DataFrame) return mod.dfd;
-    if (mod?.default?.dfd?.DataFrame) return mod.default.dfd;
-    if (mod?.default?.DataFrame) return mod.default;
-    if (mod?.DataFrame) return mod;
+    const namespace = pickDanfoNamespace(mod);
+    if (namespace) return namespace;
     throw new Error('Danfo.js failed to load (DataFrame export missing)');
 }
 
 export const getDanfo = async () => {
     if (!danfoPromise) {
-        danfoPromise = import('danfojs/lib/bundle.js').then(resolveDanfoModule);
+        danfoPromise = import(/* @vite-ignore */ DANFO_ENTRY)
+            .then(resolveDanfoModule)
+            .catch((err) => {
+                danfoPromise = null;
+                throw err;
+            });
     }
     return danfoPromise;
 };
