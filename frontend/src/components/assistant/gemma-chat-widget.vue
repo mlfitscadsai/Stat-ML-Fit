@@ -324,13 +324,23 @@ export default {
 <style scoped>
 .gemma-assistant {
     position: fixed;
-    right: 24px;
-    bottom: 24px;
-    z-index: 80;
+    right: max(1rem, env(safe-area-inset-right, 0px));
+    bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+    z-index: 120;
     font-family: Inter, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    pointer-events: none;
+}
+
+.gemma-assistant--open,
+.gemma-fab,
+.gemma-panel {
+    pointer-events: auto;
 }
 
 .gemma-fab {
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right, 0px));
+    bottom: max(1rem, env(safe-area-inset-bottom, 0px));
     display: inline-flex;
     align-items: center;
     gap: 0.65rem;
@@ -355,8 +365,14 @@ export default {
 }
 
 .gemma-panel {
-    width: min(430px, calc(100vw - 32px));
-    height: min(680px, calc(100vh - 48px));
+    --gemma-panel-inset: max(1rem, env(safe-area-inset-bottom, 0px));
+    --gemma-panel-top-inset: max(0.75rem, env(safe-area-inset-top, 0px));
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right, 0px));
+    bottom: var(--gemma-panel-inset);
+    width: clamp(340px, 34vw, 500px);
+    height: clamp(560px, 88dvh, 960px);
+    max-height: calc(100dvh - var(--gemma-panel-inset) - var(--gemma-panel-top-inset));
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -368,6 +384,7 @@ export default {
 }
 
 .gemma-panel__header {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -409,6 +426,7 @@ export default {
 
 .gemma-status,
 .gemma-settings {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -450,7 +468,8 @@ export default {
 }
 
 .gemma-messages {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -554,6 +573,7 @@ export default {
 }
 
 .gemma-suggestions {
+    flex-shrink: 0;
     display: grid;
     gap: 0.45rem;
     padding: 0.75rem 1rem 0;
@@ -572,6 +592,7 @@ export default {
 }
 
 .gemma-input {
+    flex-shrink: 0;
     display: flex;
     gap: 0.6rem;
     padding: 0.8rem 1rem 1rem;
@@ -608,5 +629,27 @@ export default {
 
 .gemma-input .gemma-stop {
     background: #dc2626;
+}
+
+@media (max-width: 768px) {
+    .gemma-panel {
+        width: calc(100vw - 1.5rem);
+        height: calc(100dvh - 2rem);
+        max-height: calc(100dvh - 2rem);
+        border-radius: 18px;
+    }
+}
+
+@media (min-width: 769px) and (min-height: 900px) {
+    .gemma-panel {
+        height: min(92dvh, 980px);
+    }
+}
+
+@media (min-width: 1400px) and (min-height: 900px) {
+    .gemma-panel {
+        width: min(520px, 32vw);
+        height: min(94dvh, 1040px);
+    }
 }
 </style>
