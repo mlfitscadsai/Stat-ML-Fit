@@ -615,21 +615,37 @@ export default {
                 });
             });
 
-            window.Plotly.newPlot('comparison_heatmap_plot', [{
-                x: metricLabels,
-                y: this.comparisonRows.map((row) => row.displayName),
-                z: normalized,
-                type: 'heatmap',
-                colorscale: 'YlGnBu',
-                zmin: 0,
-                zmax: 1
-            }], {
-                height: 330,
-                margin: { l: 90, r: 10, t: 20, b: 50 },
-                paper_bgcolor: bgColor,
-                plot_bgcolor: bgColor,
-                font: { color: textColor }
-            }, { responsive: true });
+            const heatmapEl = document.getElementById('comparison_heatmap_plot');
+            if (!heatmapEl) {
+                return;
+            }
+
+            try {
+                await window.Plotly.newPlot('comparison_heatmap_plot', [{
+                    x: metricLabels,
+                    y: this.comparisonRows.map((row) => row.displayName),
+                    z: normalized,
+                    type: 'heatmap',
+                    colorscale: 'YlGnBu',
+                    zmin: 0,
+                    zmax: 1,
+                    showscale: true,
+                    hoverongaps: false,
+                    hovertemplate: '%{y}<br>%{x}: %{z:.3f}<extra></extra>',
+                }], mergePlotlyLayout({
+                    height: 330,
+                    margin: { l: 90, r: 40, t: 20, b: 80 },
+                    xaxis: {
+                        tickangle: -25,
+                        side: 'bottom',
+                    },
+                    yaxis: {
+                        automargin: true,
+                    },
+                }, this.settings.isDark), { displayModeBar: false, responsive: true });
+            } catch (error) {
+                console.error('Failed to render comparison heatmap', error);
+            }
         },
         refreshComparison() {
             this.buildScopeOptions();
