@@ -1,4 +1,6 @@
 <template>
+    <!-- Teleport to body so fixed positioning is viewport-relative on every tab/page -->
+    <Teleport to="body">
     <div class="gemma-assistant" :class="{ 'gemma-assistant--open': isOpen }">
         <button v-if="!isOpen" class="gemma-fab" type="button" @click="openPanel()">
             <span class="gemma-fab__spark">G</span>
@@ -92,6 +94,7 @@
             </form>
         </section>
     </div>
+    </Teleport>
 </template>
 
 <script>
@@ -323,10 +326,17 @@ export default {
 
 <style scoped>
 .gemma-assistant {
+    --gemma-inset-x: max(1rem, env(safe-area-inset-right, 0px));
+    --gemma-inset-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+    --gemma-inset-top: max(0.75rem, env(safe-area-inset-top, 0px));
     position: fixed;
-    right: max(1rem, env(safe-area-inset-right, 0px));
-    bottom: max(1rem, env(safe-area-inset-bottom, 0px));
-    z-index: 120;
+    right: var(--gemma-inset-x);
+    bottom: var(--gemma-inset-bottom);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-end;
     font-family: Inter, BlinkMacSystemFont, "Segoe UI", sans-serif;
     pointer-events: none;
 }
@@ -338,9 +348,6 @@ export default {
 }
 
 .gemma-fab {
-    position: fixed;
-    right: max(1rem, env(safe-area-inset-right, 0px));
-    bottom: max(1rem, env(safe-area-inset-bottom, 0px));
     display: inline-flex;
     align-items: center;
     gap: 0.65rem;
@@ -365,14 +372,9 @@ export default {
 }
 
 .gemma-panel {
-    --gemma-panel-inset: max(1rem, env(safe-area-inset-bottom, 0px));
-    --gemma-panel-top-inset: max(0.75rem, env(safe-area-inset-top, 0px));
-    position: fixed;
-    right: max(1rem, env(safe-area-inset-right, 0px));
-    bottom: var(--gemma-panel-inset);
     width: clamp(340px, 34vw, 500px);
     height: clamp(560px, 88dvh, 960px);
-    max-height: calc(100dvh - var(--gemma-panel-inset) - var(--gemma-panel-top-inset));
+    max-height: calc(100dvh - var(--gemma-inset-bottom) - var(--gemma-inset-top));
     display: flex;
     flex-direction: column;
     overflow: hidden;
