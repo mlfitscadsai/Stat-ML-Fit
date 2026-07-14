@@ -407,8 +407,9 @@ export function buildScatterplotMatrixTracesAndLayout(
     );
     const nticks = tickCountForMatrix(n);
     const cellPx = cellSizeForMatrix(n);
-    const marginL = Math.min(104, 44 + Math.min(n, 12) * 5);
-    const marginB = Math.min(112, 52 + Math.min(n, 12) * 5);
+    const longestNameLen = Math.max(...axisNames.map((name) => String(name).length), 6);
+    const marginL = Math.min(148, 48 + longestNameLen * 5);
+    const marginB = Math.min(148, 56 + longestNameLen * 4);
     const marginR = 12;
     const marginT = 28;
     const plotWidth = cellPx * n + marginL + marginR;

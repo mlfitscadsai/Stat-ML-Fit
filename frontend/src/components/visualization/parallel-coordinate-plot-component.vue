@@ -55,6 +55,7 @@ import { settingStore } from '@/stores/settings'
 import { ScaleOptions } from '@/helpers/settings'
 import { ChartController } from '@/helpers/charts';
 import { getDanfo, getPlotly } from '@/utils/danfo_loader';
+import { applyClassMergeGroupsToDataframe } from '@/helpers/target_class_utils';
 import { dfColumn } from '@/utils/danfo_frame';
 import { applyDataTransformation } from '@/helpers/utils';
 
@@ -205,12 +206,11 @@ export default {
                 const danfo = await getDanfo()
                 const df = new danfo.DataFrame(this.settings.rawData);
                 if (this.settings.isClassification && this.settings.classTransformations.length > 0) {
-                    this.settings.mergedClasses.forEach((classes) => {
-                        let newClass = classes.map(m => m.class).join('_');
-                        classes.forEach(cls => {
-                            df.replace(cls.class, newClass, { columns: [this.settings.modelTarget], inplace: true })
-                        });
-                    })
+                    applyClassMergeGroupsToDataframe(
+                        df,
+                        this.settings.modelTarget,
+                        this.settings.mergedClasses,
+                    );
                 }
 
                 let validTransformations = this.settings.items.filter(column => column.selected && column.type === 1)

@@ -1672,7 +1672,7 @@ export class ChartController {
         }
 
         const reactOp = Plotly.react('scatterplot_mtx', traces, layout, {
-            responsive: true,
+            responsive: false,
             ...plotlyImageExportConfig,
             staticPlot: false,
             modeBarButtonsToRemove: [
@@ -1688,6 +1688,17 @@ export class ChartController {
         if (reactOp && typeof reactOp.then === 'function') {
             try {
                 await reactOp;
+                const plotElAfter = document.getElementById('scatterplot_mtx');
+                if (plotElAfter && layout.width && layout.height) {
+                    plotElAfter.style.width = `${layout.width}px`;
+                    plotElAfter.style.minWidth = `${layout.width}px`;
+                    plotElAfter.style.height = `${layout.height}px`;
+                    plotElAfter.style.minHeight = `${layout.height}px`;
+                    await Plotly.relayout('scatterplot_mtx', {
+                        width: layout.width,
+                        height: layout.height,
+                    });
+                }
             } catch (e) {
                 console.warn('ScatterplotMatrix Plotly.react failed:', e);
             }

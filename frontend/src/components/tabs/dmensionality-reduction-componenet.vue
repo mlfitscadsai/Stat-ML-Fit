@@ -648,6 +648,7 @@
 import { ChartController } from '@/helpers/charts';
 import { settingStore } from '@/stores/settings'
 import { getPlotly, getDanfo } from '@/utils/danfo_loader';
+import { applyClassMergeGroupsToDataframe } from '@/helpers/target_class_utils';
 import UMAPReducer from '@/helpers/dimensionality-reduction/umap';
 import { getGraphPalette, getPlotlyAxisDefaults, mergePlotlyLayout } from '@/helpers/chart-theme';
 
@@ -771,12 +772,11 @@ export default {
             this.df = new danfo.DataFrame(this.settings.rawData);
             this.df.dropNa({ axis: 1, inplace: true })
             if (this.settings.isClassification && this.settings.mergedClasses?.length > 0) {
-                this.settings.mergedClasses.forEach((classes) => {
-                    let newClass = classes.map(m => m.class).join('_');
-                    classes.forEach(cls => {
-                        this.df.replace(cls.class, newClass, { columns: [this.settings.modelTarget], inplace: true })
-                    });
-                })
+                applyClassMergeGroupsToDataframe(
+                    this.df,
+                    this.settings.modelTarget,
+                    this.settings.mergedClasses,
+                );
             }
         },
         async drawPCA() {

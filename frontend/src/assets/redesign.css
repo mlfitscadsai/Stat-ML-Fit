@@ -669,10 +669,18 @@ html.dark .dataset-meta-badge__sep {
 /* The plot div must always have real, positive dimensions.
    Opacity is used to hide it visually without affecting layout. */
 .distributions-plot {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   min-height: 460px;
   opacity: 0;
   transition: opacity 240ms ease;
+}
+.distributions-plot .js-plotly-plot,
+.distributions-plot .plot-container {
+  /* Keep Plotly canvas aligned with fixed layout width/height from ScatterplotMatrix */
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
 }
 .distributions-plot.is-hidden-visually { opacity: 0; }
 .distributions-plot.is-plot-ready { opacity: 1; }

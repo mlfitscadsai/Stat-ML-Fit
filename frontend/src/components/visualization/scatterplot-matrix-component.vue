@@ -182,7 +182,17 @@
                                 @click="scaleData()"
                             >
                                 <i class="fas fa-compress-arrows-alt" aria-hidden="true"></i>
-                                <span>Merge classes</span>
+                                <span>Merge selected</span>
+                            </button>
+                            <button
+                                v-if="settings.classBalanceEnabled"
+                                type="button"
+                                class="distributions-btn"
+                                :disabled="!settings.isClassification || classesInfo.length < 2"
+                                @click="applyAutoClassBalance()"
+                            >
+                                <i class="fas fa-balance-scale" aria-hidden="true"></i>
+                                <span>Auto-balance</span>
                             </button>
                             <button
                                 type="button"
@@ -208,6 +218,18 @@ import { settingStore } from '@/stores/settings'
 import { ScaleOptions } from '@/helpers/settings'
 import { transformColumnValues } from '@/helpers/utils';
 import { prepareSplomInputs } from '@/helpers/splom_data';
+import {
+    applyClassMergeGroupsToDataframe,
+    normalizeTargetLabel,
+    replaceTargetClassInDataframe,
+} from '@/helpers/target_class_utils';
+import {
+    applyClassBalanceToValues,
+    formatClassBalanceReport,
+    needsClassBalance,
+    planClassBalance,
+    planToClassTransformations,
+} from '@/services/preprocessing/class-balance-service';
 import PCPComponent from '../visualization/parallel-coordinate-plot-component.vue'
 import { getDanfo, getPlotly } from '@/utils/danfo_loader';
 import { dfColumn } from '@/utils/danfo_frame';
@@ -274,6 +296,13 @@ export default {
         'settings.isDark'() {
             if (!this.splomWatchReady) return;
             this.scheduleRefreshFromSettings();
+        },
+        'settings.classTransformations': {
+            handler() {
+                if (!this.splomWatchReady) return;
+                this.scheduleRefreshFromSettings();
+            },
+            deep: true,
         },
     },
     computed: {
@@ -368,20 +397,25 @@ export default {
             const w = el.layout.width;
             const h = el.layout.height;
             if (Number.isFinite(w) && w > 0) {
+                el.style.width = `${w}px`;
                 el.style.minWidth = `${w}px`;
             }
             if (Number.isFinite(h) && h > 0) {
+                el.style.height = `${h}px`;
                 el.style.minHeight = `${Math.max(460, h)}px`;
             }
         },
         async resizePlotById(plotId) {
             if (typeof window === 'undefined') return;
             const el = document.getElementById(plotId);
-            if (!el || !el.data) return;
+            if (!el?.layout) return;
             try {
                 const Plotly = await getPlotly();
-                if (Plotly?.Plots?.resize) {
-                    await Plotly.Plots.resize(el);
+                if (el.layout.width && el.layout.height) {
+                    await Plotly.relayout(plotId, {
+                        width: el.layout.width,
+                        height: el.layout.height,
+                    });
                 }
             } catch (e) {
                 console.warn(`resize ${plotId}:`, e);
@@ -415,12 +449,7 @@ export default {
             if (!target || !df?.columns?.includes(target) || !this.settings.mergedClasses?.length) {
                 return;
             }
-            this.settings.mergedClasses.forEach((classes) => {
-                const newClass = classes.map((m) => m.class).join('_');
-                classes.forEach((cls) => {
-                    df.replace(cls.class, newClass, { columns: [target], inplace: true });
-                });
-            });
+            applyClassMergeGroupsToDataframe(df, target, this.settings.mergedClasses);
         },
         /**
          * Raw data + class merges + shuffle/sample (seed) + drop empty columns — same basis as SPLOM plots.
@@ -436,8 +465,8 @@ export default {
         getBasePlotCacheKey() {
             const raw = this.settings.rawData;
             const rowCount = Array.isArray(raw) ? raw.length : 0;
-            const mergeCount = this.settings.mergedClasses?.length ?? 0;
-            return `${rowCount}:${this.settings.getSeed}:${mergeCount}:${this.settings.modelTarget || ''}`;
+            const mergeSig = JSON.stringify(this.settings.classTransformations || []);
+            return `${rowCount}:${this.settings.getSeed}:${mergeSig}:${this.settings.modelTarget || ''}`;
         },
         invalidateBasePlotCache() {
             this._basePlotCache = null;
@@ -513,38 +542,91 @@ export default {
             }
         },
         async updateClassesInfo() {
-            const danfo = await getDanfo()
-
-            this.df = new danfo.DataFrame(this.settings.rawData);
-            this.applyMergedClassesToDataframe(this.df);
-            if (!this.settings.modelTarget || !this.df.columns?.includes(this.settings.modelTarget)) {
+            await this.ensureBasePlotCache();
+            const target = this.settings.modelTarget;
+            if (!target || !this._basePlotCache?.values?.[target]) {
                 this.classesInfo = [];
                 return;
             }
-            let targetValues;
-            try {
-                targetValues = dfColumn(this.df, this.settings.modelTarget).values;
-            } catch {
-                this.classesInfo = [];
-                return;
+            const targetValues = this._basePlotCache.values[target];
+            const counts = new Map();
+            for (const value of targetValues) {
+                const key = normalizeTargetLabel(value);
+                if (key == null) continue;
+                counts.set(key, (counts.get(key) || 0) + 1);
             }
-            let samplesLength = targetValues.length;
-            let classes = new Set(...[targetValues]);
-            let result = []
-            classes.forEach(cls => {
-                result.push({
+            const samplesLength = targetValues.length || 1;
+            this.classesInfo = [...counts.entries()]
+                .map(([cls, count]) => ({
                     class: cls,
-                    mode: +(targetValues.filter(val => val === cls).length / samplesLength).toFixed(2)
-                })
-            });
-            this.classesInfo = result.concat();
+                    mode: +(count / samplesLength).toFixed(2),
+                }))
+                .sort((a, b) => {
+                    const na = Number(a.class);
+                    const nb = Number(b.class);
+                    if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+                    return String(a.class).localeCompare(String(b.class));
+                });
             this.classesInfoColumns = [{
                 field: 'class',
-                label: ' class'
+                label: ' class',
             }, {
                 field: 'mode',
-                label: 'Samples in each class (%)'
-            }]
+                label: 'Samples in each class (%)',
+            }];
+        },
+        async applyAutoClassBalance() {
+            const target = this.settings.modelTarget;
+            if (!this.settings.isClassification || !target) return;
+
+            try {
+                await this.ensureBasePlotCache();
+                const values = this._basePlotCache.values[target];
+                if (!values?.length) return;
+
+                const strategy = this.settings.classBalanceStrategy || 'auto';
+                if (!needsClassBalance(values, { strategy })) {
+                    this.$buefy.toast.open('Classes are already balanced for this dataset.');
+                    return;
+                }
+
+                const plan = planClassBalance(values, { strategy });
+                const { values: balanced, keptIndices } = applyClassBalanceToValues(values, plan);
+                if (!balanced.length) {
+                    throw new Error('Auto-balance removed all rows. Try merge-only strategy.');
+                }
+
+                this._basePlotCache.values[target] = balanced.slice();
+                const keepSet = new Set(keptIndices);
+                for (const col of this._basePlotCache.columns) {
+                    this._basePlotCache.values[col] = this._basePlotCache.values[col].filter(
+                        (_, index) => keepSet.has(index),
+                    );
+                }
+
+                this.settings.replaceClassTransformations(planToClassTransformations(plan));
+                this.settings.setClassBalanceReport({
+                    report: formatClassBalanceReport(plan),
+                    original: plan.original,
+                    final: plan.final,
+                });
+
+                const danfo = await getDanfo();
+                this.df = new danfo.DataFrame(this._basePlotCache.values);
+                await this.dispalySPLOM(this.df, { fast: true });
+                await this.updateClassesInfo();
+
+                this.$buefy.toast.open('Auto-balance applied to feature distributions.');
+                this.settings.addMessage({
+                    message: `Auto-balance applied in distributions: ${plan.original.distribution.length} → ${plan.final.distribution.length} classes.`,
+                    type: 'info',
+                });
+                this.classMergeOpen = true;
+            } catch (error) {
+                const message = error?.message || String(error);
+                this.$buefy.toast.open(message);
+                this.settings.addMessage({ message, type: 'warning' });
+            }
         },
         async dispalySPLOM(dataframe, options = {}) {
             if (!this.chartController) {
@@ -642,17 +724,19 @@ export default {
             if (didMerge) {
                 this.invalidateBasePlotCache();
                 await this.ensureBasePlotCache();
-                const newClass = this.selectedClasses.map((m) => m.class).join('_');
-                this.selectedClasses.forEach((cls) => {
-                    this.df.replace(cls.class, newClass, { columns: [this.settings.modelTarget], inplace: true });
-                });
-                this._basePlotCache.values[this.settings.modelTarget] = dfColumn(
-                    this.df,
-                    this.settings.modelTarget
-                ).values.slice();
+                const target = this.settings.modelTarget;
+                const sortedLabels = this.selectedClasses
+                    .map((entry) => normalizeTargetLabel(entry.class))
+                    .filter(Boolean)
+                    .sort();
+                const newClass = sortedLabels.join('_');
+                for (const cls of this.selectedClasses) {
+                    replaceTargetClassInDataframe(this.df, target, cls.class, newClass);
+                }
+                this._basePlotCache.values[target] = dfColumn(this.df, target).values.slice();
                 this.settings.setClassTransformation(this.selectedClasses);
-                const message = { message: 'merged classes: ' + newClass, type: 'info' };
-                this.$buefy.toast.open('merged classes: ' + newClass);
+                const message = { message: `Merged classes → ${newClass}`, type: 'info' };
+                this.$buefy.toast.open(`Merged classes → ${newClass}`);
                 this.settings.addMessage(message);
             }
 
@@ -689,6 +773,7 @@ export default {
 
                 if (didMerge && !reset) {
                     this.classMergeOpen = false;
+                    await this.updateClassesInfo();
                 }
 
                 this.$emit('coordinate-plot', true);

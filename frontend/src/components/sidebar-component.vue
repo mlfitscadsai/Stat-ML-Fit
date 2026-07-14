@@ -237,6 +237,7 @@ import {
     summarizeBalanceImpact,
     validateClassBalance,
 } from '@/services/preprocessing/class-balance-service';
+import { applyClassMergeGroupsToDataframe } from '@/helpers/target_class_utils';
 import { BButton, BSelect, BField, BInput, BCheckbox, useToast } from 'buefy'
 
 import axios from "axios";
@@ -814,14 +815,12 @@ export default {
                 }
                 // Manual class merges from visualization UI (applied before split)
                 if (this.settings.isClassification) {
-                    let selectedClasses = this.settings.mergedClasses
-                    if (selectedClasses?.length > 0) {
-                        this.settings.mergedClasses.forEach((classes) => {
-                            let newClass = classes.map(m => m.class).join('_');
-                            classes.forEach(cls => {
-                                filterd_dataset.replace(cls.class, newClass, { columns: [this.settings.modelTarget], inplace: true })
-                            });
-                        })
+                    if (this.settings.mergedClasses?.length > 0) {
+                        applyClassMergeGroupsToDataframe(
+                            filterd_dataset,
+                            this.settings.modelTarget,
+                            this.settings.mergedClasses,
+                        );
                     }
                 }
 
