@@ -42,7 +42,7 @@
                 <div
                     id="parallel_coordinate_plot"
                     class="distributions-plot"
-                    :class="{ 'is-plot-ready': viewState === 'ready' }"
+                    :class="{ 'is-plot-ready': viewState === 'ready', 'is-refreshing': isRefreshing }"
                 ></div>
             </div>
             <b-loading :is-full-page="false" v-model="isLoading"></b-loading>
@@ -55,9 +55,14 @@ import { settingStore } from '@/stores/settings'
 import { ScaleOptions } from '@/helpers/settings'
 import { ChartController } from '@/helpers/charts';
 import { getDanfo, getPlotly } from '@/utils/danfo_loader';
-import { applyClassMergeGroupsToDataframe } from '@/helpers/target_class_utils';
 import { dfColumn } from '@/utils/danfo_frame';
 import { applyDataTransformation } from '@/helpers/utils';
+import {
+    buildEdaBaseValues,
+    buildEdaDisplayDataframe,
+    edaContextFromSettings,
+    getEdaCacheKey,
+} from '@/helpers/eda_dataframe';
 
 export default {
     setup() {
@@ -72,12 +77,17 @@ export default {
     data() {
         return {
             isLoading: false,
+            isRefreshing: false,
             hasPlotDrawn: false,
             prefersReducedMotion: false,
             _motionMql: null,
             _motionHandler: null,
             _resizeObserver: null,
             _resizeRaf: null,
+            _basePlotCache: null,
+            _basePlotCacheKey: '',
+            _refreshTimer: null,
+            pcpWatchReady: false,
             ScaleOptions: ScaleOptions,
             features: [],
             df: null,
@@ -91,9 +101,39 @@ export default {
             }
         },
         'settings.isDark'() {
-            if (this.hasPlotDrawn) {
-                this.ParallelCoordinatePlot();
+            if (this.pcpWatchReady && this.hasPlotDrawn) {
+                this.scheduleRefresh();
             }
+        },
+        'settings.modelTarget'() {
+            if (!this.pcpWatchReady) return;
+            this.scheduleRefresh();
+        },
+        'settings.isClassification'() {
+            if (!this.pcpWatchReady) return;
+            this.scheduleRefresh();
+        },
+        'settings.seed'() {
+            if (!this.pcpWatchReady) return;
+            this.scheduleRefresh();
+        },
+        'settings.classTransformations': {
+            handler() {
+                if (!this.pcpWatchReady) return;
+                this.scheduleRefresh();
+            },
+            deep: true,
+        },
+        'settings.edaRowKeepIndices'() {
+            if (!this.pcpWatchReady) return;
+            this.scheduleRefresh();
+        },
+        'settings.items': {
+            handler() {
+                if (!this.pcpWatchReady) return;
+                this.scheduleRefresh();
+            },
+            deep: true,
         },
     },
     computed: {
@@ -118,6 +158,37 @@ export default {
         },
     },
     methods: {
+        scheduleRefresh() {
+            if (this._refreshTimer) {
+                clearTimeout(this._refreshTimer);
+            }
+            this._refreshTimer = setTimeout(() => {
+                this._refreshTimer = null;
+                void this.ParallelCoordinatePlot({ fast: true });
+            }, 60);
+        },
+        invalidateBasePlotCache() {
+            this._basePlotCache = null;
+            this._basePlotCacheKey = '';
+        },
+        getBasePlotCacheKey() {
+            return getEdaCacheKey(edaContextFromSettings(this.settings));
+        },
+        async ensureBasePlotCache() {
+            const key = this.getBasePlotCacheKey();
+            if (this._basePlotCache && this._basePlotCacheKey === key) {
+                return;
+            }
+            const danfo = await getDanfo();
+            const ctx = edaContextFromSettings(this.settings);
+            this._basePlotCache = await buildEdaBaseValues({ ...ctx, danfo });
+            this._basePlotCacheKey = key;
+        },
+        async buildPlotDataframe() {
+            await this.ensureBasePlotCache();
+            const danfo = await getDanfo();
+            return buildEdaDisplayDataframe(this._basePlotCache, this.settings, danfo);
+        },
         setupReducedMotion() {
             if (typeof window === 'undefined' || !window.matchMedia) return;
             this._motionMql = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -143,10 +214,6 @@ export default {
                 window.cancelAnimationFrame(this._resizeRaf);
                 this._resizeRaf = null;
             }
-            // rAF → debounce timer → resize.
-            // parcoords needs the full browser layout cycle (including any CSS
-            // transitions on the parent tab panel) to complete before reading
-            // offsetWidth, otherwise axis positions are computed from a stale size.
             this._resizeRaf = window.requestAnimationFrame(() => {
                 this._resizeRaf = setTimeout(() => {
                     this._resizeRaf = null;
@@ -160,9 +227,6 @@ export default {
             if (!el || !el.data) return;
             try {
                 const Plotly = await getPlotly();
-                // Parcoords axis positions are baked in at draw time and are NOT
-                // updated by Plotly.Plots.resize() alone.  Passing an explicit
-                // width forces Plotly to recompute the inter-axis spacing.
                 const w = el.offsetWidth;
                 const update = w > 100
                     ? { width: w, autosize: true }
@@ -179,9 +243,6 @@ export default {
             this._resizeObserver = new window.ResizeObserver(() => {
                 this.scheduleResizePlot();
             });
-            // Observe the viewport (layout changes) AND the component root so
-            // that when a v-show ancestor reveals this component the observer
-            // fires and we can relayout with the now-correct container width.
             const viewport = this.$el?.querySelector?.('.distributions-plot-viewport');
             if (viewport) this._resizeObserver.observe(viewport);
             if (this.$el) this._resizeObserver.observe(this.$el);
@@ -197,62 +258,81 @@ export default {
                 this._resizeRaf = null;
             }
         },
-        async ParallelCoordinatePlot() {
-            this.isLoading = true;
+        async ParallelCoordinatePlot(options = {}) {
+            const fast = options.fast === true;
+            if (!this.settings.rawData?.length || !this.chartController) {
+                return;
+            }
+
+            if (!fast) {
+                this.isLoading = true;
+            } else {
+                this.isRefreshing = true;
+            }
+
             try {
-                if (!this.settings.rawData?.length || !this.chartController) {
-                    return;
-                }
-                const danfo = await getDanfo()
-                const df = new danfo.DataFrame(this.settings.rawData);
-                if (this.settings.isClassification && this.settings.classTransformations.length > 0) {
-                    applyClassMergeGroupsToDataframe(
-                        df,
-                        this.settings.modelTarget,
-                        this.settings.mergedClasses,
-                    );
+                const danfo = await getDanfo();
+                const df = await this.buildPlotDataframe();
+
+                const validTransformations = (this.settings.items || [])
+                    .filter((column) => column.selected && column.type === 1);
+
+                if (typeof window !== 'undefined' && window.Plotly) {
+                    window.Plotly.purge('parallel_coordinate_plot');
                 }
 
-                let validTransformations = this.settings.items.filter(column => column.selected && column.type === 1)
-                window.Plotly.purge('parallel_coordinate_plot')
                 await applyDataTransformation(
                     df,
                     validTransformations.map((t) => t.name),
-                    validTransformations
+                    validTransformations,
                 );
-                let numericColumns = this.settings.items
-                    .filter(column => column.selected && column.type === 1)
-                    .map(column => column.name)
+
+                const numericColumns = (this.settings.items || [])
+                    .filter((column) => column.selected && column.type === 1)
+                    .map((column) => column.name)
                     .filter((name) => df.columns.includes(name));
+
                 const target = this.settings.modelTarget;
                 if (numericColumns.length < 1 || !target || !df.columns.includes(target)) {
                     return;
                 }
+
                 const colsNeeded = [...new Set([...numericColumns, target])];
-                let slice = df.loc({ columns: colsNeeded });
+                const slice = df.loc({ columns: colsNeeded });
                 slice.dropNa({ axis: 0, inplace: true });
+
                 await this.chartController.parallelCoordinatePlot(
                     slice.loc({ columns: numericColumns }).values,
                     dfColumn(slice, target).values,
                     numericColumns,
-                    this.settings.isClassification
-                )
+                    this.settings.isClassification,
+                );
                 this.hasPlotDrawn = true;
                 await this.$nextTick();
                 this.scheduleResizePlot();
             } catch (e) {
                 console.warn('ParallelCoordinatePlot:', e);
             } finally {
-                this.isLoading = false;
+                if (!fast) {
+                    this.isLoading = false;
+                } else {
+                    this.isRefreshing = false;
+                }
             }
-        }
+        },
     },
     mounted() {
         this.chartController = new ChartController(null, null)
         this.setupReducedMotion();
         this.setupResizeObserver();
+        this.$nextTick(() => {
+            this.pcpWatchReady = true;
+        });
     },
     beforeUnmount() {
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+        }
         this.teardownReducedMotion();
         this.teardownResizeObserver();
     },
@@ -265,7 +345,6 @@ export default {
     width: 100%;
 }
 
-/* Ensure the card body fills horizontal space inside the SPLOM parent card. */
 .distributions-card {
     width: 100%;
 }

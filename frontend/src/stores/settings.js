@@ -2,6 +2,10 @@ import { defineStore } from 'pinia'
 import { markRaw } from 'vue'
 import { createExperimentRecord, saveExperiment } from '@/services/experiments/experiment-store'
 import { applyTheme, getStoredTheme, setStoredTheme } from '@/services/theme/theme-service'
+import {
+    mergeGroupsAfterManualMerge,
+    removeMergeGroupByLabel,
+} from '@/helpers/target_class_utils'
 
 export const settingStore = defineStore('app', {
     state: () => ({
@@ -15,6 +19,8 @@ export const settingStore = defineStore('app', {
         classBalanceEnabled: true,
         classBalanceStrategy: 'auto',
         classBalanceReport: null,
+        /** Row indices kept after EDA auto-balance row removal (relative to sampled frame). */
+        edaRowKeepIndices: null,
         results: [],
         trainingRuns: [],
         hpcJobs: [],
@@ -99,12 +105,34 @@ export const settingStore = defineStore('app', {
             this.features = []
             this.transformations = []
             this.classTransformations = []
+            this.edaRowKeepIndices = null
+            this.classBalanceReport = null
         },
         resetClassTransformations() {
             this.classTransformations = []
+            this.edaRowKeepIndices = null
+            this.classBalanceReport = null
         },
         replaceClassTransformations(transformations) {
             this.classTransformations = Array.isArray(transformations) ? transformations : []
+        },
+        setEdaRowKeepIndices(indices) {
+            this.edaRowKeepIndices = Array.isArray(indices) ? [...indices] : null
+        },
+        clearEdaRowKeepIndices() {
+            this.edaRowKeepIndices = null
+        },
+        unmergeClassByLabel(mergedLabel) {
+            this.classTransformations = removeMergeGroupByLabel(
+                this.classTransformations,
+                mergedLabel,
+            )
+        },
+        applyManualClassMerge(labelsToMerge) {
+            this.classTransformations = mergeGroupsAfterManualMerge(
+                this.classTransformations,
+                labelsToMerge,
+            )
         },
         setClassBalanceEnabled(enabled) {
             this.classBalanceEnabled = Boolean(enabled)

@@ -135,7 +135,7 @@
                 @toggle="onClassMergeToggle"
             >
                 <summary class="distributions-merge__summary">
-                    <span>Merge classes</span>
+                    <span>Class balance &amp; merge</span>
                     <span v-if="settings.isClassification && classesInfo.length" class="distributions-merge__count">
                         {{ classesInfo.length }}
                         {{ classesInfo.length === 1 ? 'class' : 'classes' }}
@@ -148,8 +148,7 @@
                         role="status"
                     >
                         <p class="distributions-empty__body">
-                            Merge classes is available for classification targets only.
-                            Current target is treated as regression.
+                            Class merge and balance are available for classification targets only.
                         </p>
                     </div>
                     <div
@@ -162,30 +161,104 @@
                         </p>
                     </div>
                     <template v-else>
-                        <b-table
-                            class="is-size-7 distributions-merge__table"
-                            :data="classesInfo"
-                            :columns="classesInfoColumns"
-                            checkable
-                            :row-class="(row) => row.mode <= 0.10 ? 'has-text-danger' : ''"
-                            :narrowed="true"
-                            :checked-rows.sync="selectedClasses"
-                        ></b-table>
+                        <p class="distributions-merge__hint">
+                            Select two or more classes to merge manually, unmerge combined groups, auto-balance
+                            rare classes, or reset all changes.
+                        </p>
+
+                        <div
+                            v-if="activeMergeGroups.length"
+                            class="distributions-merge__groups"
+                            aria-label="Active merge groups"
+                        >
+                            <span
+                                v-for="group in activeMergeGroups"
+                                :key="group.label"
+                                class="distributions-merge__chip"
+                            >
+                                <span class="distributions-merge__chip-label">{{ group.label }}</span>
+                                <span class="distributions-merge__chip-meta">
+                                    ← {{ group.members.join(' + ') }}
+                                </span>
+                                <button
+                                    type="button"
+                                    class="distributions-merge__chip-btn"
+                                    :aria-label="`Unmerge ${group.label}`"
+                                    @click="unmergeClass(group.label)"
+                                >
+                                    <i class="fas fa-times" aria-hidden="true"></i>
+                                </button>
+                            </span>
+                        </div>
+
+                        <div class="distributions-merge__table-wrap">
+                            <table class="distributions-merge__table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="col-check">
+                                            <span class="is-sr-only">Select</span>
+                                        </th>
+                                        <th scope="col">Class</th>
+                                        <th scope="col">Samples</th>
+                                        <th scope="col">Share</th>
+                                        <th scope="col" class="col-action">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="row in classesInfo"
+                                        :key="row.class"
+                                        :class="{
+                                            'is-rare': row.isRare,
+                                            'is-selected': isClassRowSelected(row),
+                                        }"
+                                    >
+                                        <td class="col-check">
+                                            <input
+                                                type="checkbox"
+                                                :checked="isClassRowSelected(row)"
+                                                :aria-label="`Select class ${row.class}`"
+                                                @change="toggleClassSelection(row, $event)"
+                                            />
+                                        </td>
+                                        <td>
+                                            <span class="distributions-merge__class-name">{{ row.class }}</span>
+                                            <span
+                                                v-if="row.isMerged"
+                                                class="distributions-merge__badge"
+                                            >merged</span>
+                                        </td>
+                                        <td>{{ row.count }}</td>
+                                        <td :class="{ 'has-text-danger': row.isMinor }">
+                                            {{ row.sharePct }}%
+                                        </td>
+                                        <td class="col-action">
+                                            <button
+                                                v-if="row.isMerged"
+                                                type="button"
+                                                class="distributions-merge__row-btn"
+                                                @click="unmergeClass(row.class)"
+                                            >
+                                                Unmerge
+                                            </button>
+                                            <span v-else class="distributions-merge__row-muted">—</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
                         <div class="distributions-merge__actions">
                             <button
                                 type="button"
                                 class="distributions-btn is-primary"
-                                :disabled="
-                                    !selectedClasses?.length ||
-                                    selectedClasses.length >= classesInfo.length
-                                "
-                                @click="scaleData()"
+                                :disabled="!canMergeSelected"
+                                @click="mergeSelectedClasses()"
                             >
                                 <i class="fas fa-compress-arrows-alt" aria-hidden="true"></i>
                                 <span>Merge selected</span>
                             </button>
                             <button
-                                v-if="settings.classBalanceEnabled"
                                 type="button"
                                 class="distributions-btn"
                                 :disabled="!settings.isClassification || classesInfo.length < 2"
@@ -197,12 +270,21 @@
                             <button
                                 type="button"
                                 class="distributions-btn"
-                                @click="scaleData(true)"
+                                :disabled="!hasClassChanges"
+                                @click="resetAllClassMerges()"
                             >
                                 <i class="fas fa-rotate-left" aria-hidden="true"></i>
-                                <span>Reset</span>
+                                <span>Reset all</span>
                             </button>
                         </div>
+
+                        <p
+                            v-if="settings.classBalanceEnabled"
+                            class="distributions-merge__strategy"
+                        >
+                            Sidebar strategy:
+                            <strong>{{ classBalanceStrategyLabel }}</strong>
+                        </p>
                     </template>
                 </div>
             </details>
@@ -216,13 +298,18 @@
 import { ChartController } from '@/helpers/charts';
 import { settingStore } from '@/stores/settings'
 import { ScaleOptions } from '@/helpers/settings'
-import { transformColumnValues } from '@/helpers/utils';
 import { prepareSplomInputs } from '@/helpers/splom_data';
 import {
-    applyClassMergeGroupsToDataframe,
-    normalizeTargetLabel,
-    replaceTargetClassInDataframe,
+    buildClassInfoRows,
+    mergedLabelFromGroup,
+    resolveSelectionToOriginalLabels,
 } from '@/helpers/target_class_utils';
+import {
+    buildEdaBaseValues,
+    buildEdaDisplayDataframe,
+    edaContextFromSettings,
+    getEdaCacheKey,
+} from '@/helpers/eda_dataframe';
 import {
     applyClassBalanceToValues,
     formatClassBalanceReport,
@@ -232,8 +319,7 @@ import {
 } from '@/services/preprocessing/class-balance-service';
 import PCPComponent from '../visualization/parallel-coordinate-plot-component.vue'
 import { getDanfo, getPlotly } from '@/utils/danfo_loader';
-import { dfColumn } from '@/utils/danfo_frame';
-import { BSelect, BTable } from 'buefy';
+import { BSelect } from 'buefy';
 
 /** Rows threshold above which we surface a "plots may take a few seconds" hint. */
 const LARGE_DATASET_THRESHOLD = 5000;
@@ -242,7 +328,7 @@ const SKELETON_MAX_AXIS = 12;
 
 export default {
     components: {
-        'parallel-coordinate-plot-component': PCPComponent, BSelect, BTable
+        'parallel-coordinate-plot-component': PCPComponent, BSelect
     },
     setup() {
         const settings = settingStore()
@@ -270,9 +356,10 @@ export default {
             rawData: null,
             classesInfo: [],
             selectedClasses: [],
-            classesInfoColumns: [],
             settingsRefreshTimer: null,
             scaleRefreshTimer: null,
+            classActionBusy: false,
+            _suppressTransformWatch: false,
             scaleRefreshing: false,
             _basePlotCache: null,
             _basePlotCacheKey: '',
@@ -299,10 +386,14 @@ export default {
         },
         'settings.classTransformations': {
             handler() {
-                if (!this.splomWatchReady) return;
+                if (!this.splomWatchReady || this._suppressTransformWatch) return;
                 this.scheduleRefreshFromSettings();
             },
             deep: true,
+        },
+        'settings.edaRowKeepIndices'() {
+            if (!this.splomWatchReady || this._suppressTransformWatch) return;
+            this.scheduleRefreshFromSettings();
         },
     },
     computed: {
@@ -344,7 +435,30 @@ export default {
             get() {
                 return this.features.length === 0 ? 0 : 100 / this.features.length
             }
-        }
+        },
+        canMergeSelected() {
+            return this.selectedClasses.length >= 2
+                && this.selectedClasses.length < this.classesInfo.length;
+        },
+        hasClassChanges() {
+            return (this.settings.classTransformations?.length ?? 0) > 0
+                || (this.settings.edaRowKeepIndices?.length ?? 0) > 0;
+        },
+        activeMergeGroups() {
+            return (this.settings.mergedClasses || []).map((group) => ({
+                label: mergedLabelFromGroup(group),
+                members: group.map((entry) => String(entry.class)),
+            })).filter((group) => group.label);
+        },
+        classBalanceStrategyLabel() {
+            const labels = {
+                auto: 'Auto (merge then remove)',
+                merge: 'Merge only',
+                remove: 'Remove rare classes',
+                merge_then_remove: 'Merge then remove',
+            };
+            return labels[this.settings.classBalanceStrategy] || this.settings.classBalanceStrategy;
+        },
     },
     methods: {
         slugify(name) {
@@ -443,30 +557,9 @@ export default {
         downlaodSPLOM() {
             this.chartController.downloadPlot('scatterplot_mtx')
         },
-        /** Apply saved class merges to the target column (in place). */
-        applyMergedClassesToDataframe(df) {
-            const target = this.settings.modelTarget;
-            if (!target || !df?.columns?.includes(target) || !this.settings.mergedClasses?.length) {
-                return;
-            }
-            applyClassMergeGroupsToDataframe(df, target, this.settings.mergedClasses);
-        },
-        /**
-         * Raw data + class merges + shuffle/sample (seed) + drop empty columns — same basis as SPLOM plots.
-         */
-        async buildWorkingDataframe() {
-            const danfo = await getDanfo();
-            let df = new danfo.DataFrame(this.settings.rawData);
-            this.applyMergedClassesToDataframe(df);
-            df = await df.sample(df.$data.length, { seed: this.settings.getSeed });
-            df.dropNa({ axis: 1, inplace: true });
-            return df;
-        },
         getBasePlotCacheKey() {
-            const raw = this.settings.rawData;
-            const rowCount = Array.isArray(raw) ? raw.length : 0;
-            const mergeSig = JSON.stringify(this.settings.classTransformations || []);
-            return `${rowCount}:${this.settings.getSeed}:${mergeSig}:${this.settings.modelTarget || ''}`;
+            const ctx = edaContextFromSettings(this.settings);
+            return getEdaCacheKey(ctx);
         },
         invalidateBasePlotCache() {
             this._basePlotCache = null;
@@ -477,32 +570,17 @@ export default {
             if (this._basePlotCache && this._basePlotCacheKey === key) {
                 return;
             }
-            const df = await this.buildWorkingDataframe();
-            const columns = df.columns.slice();
-            const values = {};
-            for (const col of columns) {
-                values[col] = dfColumn(df, col).values.slice();
-            }
-            this._basePlotCache = { columns, values };
+            const danfo = await getDanfo();
+            const ctx = edaContextFromSettings(this.settings);
+            const base = await buildEdaBaseValues({ ...ctx, danfo });
+            this._basePlotCache = base;
             this._basePlotCacheKey = key;
-            this.df = df;
+            this.df = buildEdaDisplayDataframe(base, this.settings, danfo);
         },
         async buildPlotDataframeForDisplay() {
             await this.ensureBasePlotCache();
             const danfo = await getDanfo();
-            const { columns, values } = this._basePlotCache;
-            const data = {};
-            for (const col of columns) {
-                let colValues = values[col].slice();
-                const feature = this.settings.items.find(
-                    (item) => item.name === col && item.selected && item.type === 1
-                );
-                if (feature && feature.scaler != 0) {
-                    colValues = transformColumnValues(colValues, feature.scaler);
-                }
-                data[col] = colValues;
-            }
-            return new danfo.DataFrame(data);
+            return buildEdaDisplayDataframe(this._basePlotCache, this.settings, danfo);
         },
         syncFeaturesMetaFromSettings() {
             const numericColumns = this.settings.items
@@ -514,6 +592,42 @@ export default {
                 type: feature.type,
                 scaler: 0,
             }));
+        },
+        async withSuppressTransformWatch(fn) {
+            this._suppressTransformWatch = true;
+            try {
+                await fn();
+            } finally {
+                this._suppressTransformWatch = false;
+            }
+        },
+        isClassRowSelected(row) {
+            return this.selectedClasses.some((entry) => entry.class === row.class);
+        },
+        toggleClassSelection(row, event) {
+            const checked = event?.target?.checked;
+            if (checked) {
+                if (!this.isClassRowSelected(row)) {
+                    this.selectedClasses = [...this.selectedClasses, row];
+                }
+            } else {
+                this.selectedClasses = this.selectedClasses.filter(
+                    (entry) => entry.class !== row.class,
+                );
+            }
+        },
+        async refreshClassPlots(options = {}) {
+            const fast = options.fast !== false;
+            this.invalidateBasePlotCache();
+            this.df = await this.buildPlotDataframeForDisplay();
+            await this.dispalySPLOM(this.df, { fast, syncPcp: true });
+            await this.updateClassesInfo();
+            this.selectedClasses = [];
+            this.scheduleVisibleLayoutSync();
+        },
+        async refreshLinkedPlots(options = {}) {
+            const fast = options.fast !== false;
+            await this.$refs.coordinate_plot?.ParallelCoordinatePlot?.({ fast });
         },
         scheduleRefreshFromSettings() {
             if (this.settingsRefreshTimer) {
@@ -537,6 +651,10 @@ export default {
                 this.df = await this.buildPlotDataframeForDisplay();
                 this.syncFeaturesMetaFromSettings();
                 await this.dispalySPLOM(this.df);
+                if (this.settings.isClassification) {
+                    await this.updateClassesInfo();
+                }
+                await this.refreshLinkedPlots({ fast: false });
             } catch (e) {
                 console.warn('refreshPlotsForSettingsChange:', e);
             }
@@ -548,37 +666,87 @@ export default {
                 this.classesInfo = [];
                 return;
             }
-            const targetValues = this._basePlotCache.values[target];
-            const counts = new Map();
-            for (const value of targetValues) {
-                const key = normalizeTargetLabel(value);
-                if (key == null) continue;
-                counts.set(key, (counts.get(key) || 0) + 1);
-            }
-            const samplesLength = targetValues.length || 1;
-            this.classesInfo = [...counts.entries()]
-                .map(([cls, count]) => ({
-                    class: cls,
-                    mode: +(count / samplesLength).toFixed(2),
-                }))
-                .sort((a, b) => {
-                    const na = Number(a.class);
-                    const nb = Number(b.class);
-                    if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
-                    return String(a.class).localeCompare(String(b.class));
+            this.classesInfo = buildClassInfoRows(
+                this._basePlotCache.values[target],
+                this.settings.mergedClasses,
+            );
+        },
+        async mergeSelectedClasses() {
+            if (!this.canMergeSelected || this.classActionBusy) return;
+            this.classActionBusy = true;
+            try {
+                const labels = resolveSelectionToOriginalLabels(
+                    this.selectedClasses,
+                    this.settings.mergedClasses,
+                );
+                if (labels.length < 2) {
+                    this.$buefy.toast.open('Select at least two classes to merge.');
+                    return;
+                }
+                const newLabel = labels.join('_');
+                await this.withSuppressTransformWatch(async () => {
+                    this.settings.applyManualClassMerge(labels);
                 });
-            this.classesInfoColumns = [{
-                field: 'class',
-                label: ' class',
-            }, {
-                field: 'mode',
-                label: 'Samples in each class (%)',
-            }];
+                await this.refreshClassPlots({ fast: true });
+                this.$buefy.toast.open(`Merged → ${newLabel}`);
+                this.settings.addMessage({
+                    message: `Merged classes → ${newLabel}`,
+                    type: 'info',
+                });
+                this.classMergeOpen = true;
+            } catch (error) {
+                const message = error?.message || String(error);
+                this.$buefy.toast.open(message);
+            } finally {
+                this.classActionBusy = false;
+            }
+        },
+        async unmergeClass(mergedLabel) {
+            if (!mergedLabel || this.classActionBusy) return;
+            this.classActionBusy = true;
+            try {
+                await this.withSuppressTransformWatch(async () => {
+                    this.settings.unmergeClassByLabel(mergedLabel);
+                });
+                await this.refreshClassPlots({ fast: true });
+                this.$buefy.toast.open(`Unmerged ${mergedLabel}`);
+                this.settings.addMessage({
+                    message: `Unmerged class group ${mergedLabel}`,
+                    type: 'info',
+                });
+            } catch (error) {
+                const message = error?.message || String(error);
+                this.$buefy.toast.open(message);
+            } finally {
+                this.classActionBusy = false;
+            }
+        },
+        async resetAllClassMerges() {
+            if (!this.hasClassChanges || this.classActionBusy) return;
+            this.classActionBusy = true;
+            try {
+                await this.withSuppressTransformWatch(async () => {
+                    this.settings.resetClassTransformations();
+                });
+                await this.refreshClassPlots({ fast: true });
+                this.$buefy.toast.open('All class merges and balance changes reset.');
+                this.settings.addMessage({
+                    message: 'Class merges and EDA balance reset to original labels.',
+                    type: 'info',
+                });
+                this.classMergeOpen = true;
+            } catch (error) {
+                const message = error?.message || String(error);
+                this.$buefy.toast.open(message);
+            } finally {
+                this.classActionBusy = false;
+            }
         },
         async applyAutoClassBalance() {
             const target = this.settings.modelTarget;
-            if (!this.settings.isClassification || !target) return;
+            if (!this.settings.isClassification || !target || this.classActionBusy) return;
 
+            this.classActionBusy = true;
             try {
                 await this.ensureBasePlotCache();
                 const values = this._basePlotCache.values[target];
@@ -596,29 +764,21 @@ export default {
                     throw new Error('Auto-balance removed all rows. Try merge-only strategy.');
                 }
 
-                this._basePlotCache.values[target] = balanced.slice();
-                const keepSet = new Set(keptIndices);
-                for (const col of this._basePlotCache.columns) {
-                    this._basePlotCache.values[col] = this._basePlotCache.values[col].filter(
-                        (_, index) => keepSet.has(index),
-                    );
-                }
-
-                this.settings.replaceClassTransformations(planToClassTransformations(plan));
-                this.settings.setClassBalanceReport({
-                    report: formatClassBalanceReport(plan),
-                    original: plan.original,
-                    final: plan.final,
+                await this.withSuppressTransformWatch(async () => {
+                    this.settings.replaceClassTransformations(planToClassTransformations(plan));
+                    this.settings.setEdaRowKeepIndices(keptIndices);
+                    this.settings.setClassBalanceReport({
+                        report: formatClassBalanceReport(plan),
+                        original: plan.original,
+                        final: plan.final,
+                    });
                 });
 
-                const danfo = await getDanfo();
-                this.df = new danfo.DataFrame(this._basePlotCache.values);
-                await this.dispalySPLOM(this.df, { fast: true });
-                await this.updateClassesInfo();
+                await this.refreshClassPlots({ fast: true });
 
                 this.$buefy.toast.open('Auto-balance applied to feature distributions.');
                 this.settings.addMessage({
-                    message: `Auto-balance applied in distributions: ${plan.original.distribution.length} → ${plan.final.distribution.length} classes.`,
+                    message: `Auto-balance: ${plan.original.distribution.length} → ${plan.final.distribution.length} classes.`,
                     type: 'info',
                 });
                 this.classMergeOpen = true;
@@ -626,6 +786,8 @@ export default {
                 const message = error?.message || String(error);
                 this.$buefy.toast.open(message);
                 this.settings.addMessage({ message, type: 'warning' });
+            } finally {
+                this.classActionBusy = false;
             }
         },
         async dispalySPLOM(dataframe, options = {}) {
@@ -683,13 +845,16 @@ export default {
                     { skipPurge: fast }
                 );
                 this.hasPlotDrawn = true;
+                const syncPcp = options.syncPcp !== false;
                 if (!fast) {
                     if (this.settings.isClassification) {
                         await this.updateClassesInfo();
                     }
-                    await this.$refs.coordinate_plot?.ParallelCoordinatePlot();
-                } else {
-                    void this.$refs.coordinate_plot?.ParallelCoordinatePlot?.();
+                    if (syncPcp) {
+                        await this.refreshLinkedPlots({ fast: false });
+                    }
+                } else if (syncPcp) {
+                    await this.refreshLinkedPlots({ fast: true });
                 }
                 this.scheduleVisibleLayoutSync();
             } catch (error) {
@@ -704,49 +869,24 @@ export default {
                 }
             }
         },
-        scaleData(reset = false) {
+        scaleData() {
             if (this.scaleRefreshTimer) {
                 clearTimeout(this.scaleRefreshTimer);
             }
             this.scaleRefreshTimer = setTimeout(() => {
                 this.scaleRefreshTimer = null;
-                void this.runScaleData(reset);
+                void this.runFeatureScaling();
             }, 50);
         },
-        async runScaleData(reset = false) {
-            if (reset) {
-                this.settings.resetClassTransformations([]);
-                this.invalidateBasePlotCache();
-                await this.updateClassesInfo();
-            }
-
-            const didMerge = this.settings.isClassification && this.selectedClasses?.length > 0;
-            if (didMerge) {
-                this.invalidateBasePlotCache();
-                await this.ensureBasePlotCache();
-                const target = this.settings.modelTarget;
-                const sortedLabels = this.selectedClasses
-                    .map((entry) => normalizeTargetLabel(entry.class))
-                    .filter(Boolean)
-                    .sort();
-                const newClass = sortedLabels.join('_');
-                for (const cls of this.selectedClasses) {
-                    replaceTargetClassInDataframe(this.df, target, cls.class, newClass);
-                }
-                this._basePlotCache.values[target] = dfColumn(this.df, target).values.slice();
-                this.settings.setClassTransformation(this.selectedClasses);
-                const message = { message: `Merged classes → ${newClass}`, type: 'info' };
-                this.$buefy.toast.open(`Merged classes → ${newClass}`);
-                this.settings.addMessage(message);
-            }
-
+        async runFeatureScaling() {
             const validTransformations = this.settings.items.filter(
                 (feature) => feature.selected && feature.type === 1 && feature.scaler != 0
             );
 
             try {
+                this.scaleRefreshing = true;
                 this.df = await this.buildPlotDataframeForDisplay();
-                await this.dispalySPLOM(this.df, { fast: true });
+                await this.dispalySPLOM(this.df, { fast: true, syncPcp: true });
 
                 if (validTransformations.length > 0) {
                     const transformations = [];
@@ -762,18 +902,12 @@ export default {
                         );
                     });
 
-                    const message = {
+                    this.settings.addMessage({
                         message: 'scaled fetures: <br> ' + transformations.join('_'),
                         type: 'info',
-                    };
-                    this.settings.addMessage(message);
+                    });
                 } else {
                     this.settings.resetTransformations();
-                }
-
-                if (didMerge && !reset) {
-                    this.classMergeOpen = false;
-                    await this.updateClassesInfo();
                 }
 
                 this.$emit('coordinate-plot', true);
@@ -782,7 +916,7 @@ export default {
                 this.$buefy.toast.open(message);
                 this.settings.addMessage({ message, type: 'warning' });
             } finally {
-                this.selectedClasses = [];
+                this.scaleRefreshing = false;
             }
         },
         async initSPLOM() {

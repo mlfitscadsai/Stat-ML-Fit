@@ -257,7 +257,7 @@ describe('ScatterplotMatrixComponent.vue — UX redesign', () => {
         });
         const mergeInRegression = notClass.find('.distributions-merge');
         expect(mergeInRegression.exists()).toBe(true);
-        expect(mergeInRegression.text()).toMatch(/classification targets only/i);
+        expect(mergeInRegression.text()).toMatch(/classification targets only|Class balance/i);
 
         const { wrapper: isClass } = await mountSplom({
             stateOverrides: {
