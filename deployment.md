@@ -10,6 +10,7 @@ Deploy the [mlfitscadsai/Stat-ML-Fit](https://github.com/mlfitscadsai/Stat-ML-Fi
 | **Nginx static root** | `/opt/stat-ml-fit/frontend/dist` |
 | **Flask API (Docker)** | `127.0.0.1:5001` → container port `5000` |
 | **Default branch** | `main` |
+| **HPC cluster** | `ssh mlfit@login2.barnard.hpc.tu-dresden.de` |
 
 Do not store VM passwords, tokens, or HPC credentials in Git, GitHub Actions logs, or this file. Use SSH keys and a VM-local `.env` file.
 
