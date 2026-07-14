@@ -271,7 +271,7 @@ export function analyzeReadiness(data, options = {}) {
     if (warnings.some((warning) => warning.code === 'class_imbalance')) {
         suggestions.push({
             code: 'rebalance_or_metric',
-            message: 'Use class-balanced metrics such as macro F1 and consider rebalancing for the first benchmark.',
+            message: 'Enable auto-balance classes in Advanced Pipeline settings, or use macro F1 and inspect the confusion matrix.',
         });
     }
     if (!target && targetCandidates.length) {

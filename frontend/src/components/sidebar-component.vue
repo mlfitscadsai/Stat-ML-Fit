@@ -134,6 +134,16 @@
                         <b-field v-if="usePCAs" class="sidebar-field" label="Number of Components">
                             <b-input size="is-small" v-model="numberOfComponents" type="number"></b-input>
                         </b-field>
+                        <b-field v-if="settings.isClassification">
+                            <b-checkbox v-model="classBalanceEnabled" size="is-small">Auto-balance classes</b-checkbox>
+                        </b-field>
+                        <b-field v-if="settings.isClassification && classBalanceEnabled" class="sidebar-field" label="Balance strategy">
+                            <b-select v-model="classBalanceStrategy" :expanded="true" size="is-small">
+                                <option v-for="option in classBalanceStrategies" :value="option.id" :key="option.id">
+                                    {{ option.label }}
+                                </option>
+                            </b-select>
+                        </b-field>
                         <b-field>
                             <b-checkbox v-model="useOutliers" size="is-small">Enable outlier detection</b-checkbox>
                         </b-field>
@@ -218,6 +228,15 @@ import {
     fetchHpcHealth,
     uploadDatasetBlob,
 } from '@/services/hpc/hpc-client';
+import {
+    applyClassBalanceToSplit,
+    formatClassBalanceReport,
+    needsClassBalance,
+    planClassBalance,
+    planToClassTransformations,
+    summarizeBalanceImpact,
+    validateClassBalance,
+} from '@/services/preprocessing/class-balance-service';
 import { BButton, BSelect, BField, BInput, BCheckbox, useToast } from 'buefy'
 
 import axios from "axios";
@@ -254,6 +273,14 @@ export default {
                 { id: 'isolation', label: 'Isolation Forest' },
             ],
             useHPC: false,
+            classBalanceEnabled: true,
+            classBalanceStrategy: 'auto',
+            classBalanceStrategies: [
+                { id: 'auto', label: 'Auto (merge then remove)' },
+                { id: 'merge', label: 'Merge only' },
+                { id: 'remove', label: 'Remove only' },
+                { id: 'merge_then_remove', label: 'Merge then remove' },
+            ],
             hpcConfigured: null,
             hpcUploadedFile: null,
             hpcUploading: false,
@@ -333,6 +360,12 @@ export default {
             if (enabled && (!Number(this.numberOfComponents) || Number(this.numberOfComponents) < 1)) {
                 this.numberOfComponents = 2;
             }
+        },
+        classBalanceEnabled(enabled) {
+            this.settings.setClassBalanceEnabled(enabled);
+        },
+        classBalanceStrategy(strategy) {
+            this.settings.setClassBalanceStrategy(strategy);
         },
     },
     methods: {
@@ -779,7 +812,7 @@ export default {
                     }
                     filterd_dataset = applyDataTransformation(filterd_dataset, numericColumns, transformations);
                 }
-                // add class transformation
+                // Manual class merges from visualization UI (applied before split)
                 if (this.settings.isClassification) {
                     let selectedClasses = this.settings.mergedClasses
                     if (selectedClasses?.length > 0) {
@@ -837,6 +870,54 @@ export default {
                 }))
                 let [x_train, y_train, x_test, y_test] = await this.resolveTrainingSplit(cross_validation_setting, filterd_dataset, targets);
 
+                // Automated class balancing: fit on training labels only, apply to both splits
+                const hasManualClassMerges = this.settings.mergedClasses?.length > 0;
+                if (this.settings.classificationTask && this.classBalanceEnabled && !hasManualClassMerges) {
+                    const balanceOptions = { strategy: this.classBalanceStrategy };
+                    if (needsClassBalance(y_train.values, balanceOptions)) {
+                        const balancePlan = planClassBalance(y_train.values, balanceOptions);
+                        const balanceValidation = validateClassBalance(balancePlan);
+                        if (!balanceValidation.ok && !balancePlan.skipped) {
+                            throw new Error(`Class balance validation failed: ${balanceValidation.issues.join(' ')}`);
+                        }
+
+                        if (!balancePlan.skipped) {
+                            const balanced = applyClassBalanceToSplit(x_train, y_train, x_test, y_test, balancePlan);
+                            x_train = balanced.xTrain;
+                            y_train = balanced.yTrain;
+                            x_test = balanced.xTest;
+                            y_test = balanced.yTest;
+
+                            this.settings.replaceClassTransformations(planToClassTransformations(balancePlan));
+                            this.settings.setClassBalanceReport({
+                                report: formatClassBalanceReport(balancePlan),
+                                impact: summarizeBalanceImpact(balancePlan),
+                                original: balancePlan.original,
+                                final: balancePlan.final,
+                                mergeGroups: balancePlan.mergeGroups,
+                                removedCount: balancePlan.removedCount,
+                            });
+
+                            const impact = summarizeBalanceImpact(balancePlan);
+                            this.settings.addMessage({
+                                message: `Class balance: ${impact.classesBefore} → ${impact.classesAfter} classes; removed ${impact.removedSamples} sample(s); minority share ${(impact.minorityShareBefore * 100).toFixed(1)}% → ${(impact.minorityShareAfter * 100).toFixed(1)}%.`,
+                                type: 'info',
+                            });
+                            if (balanced.droppedUnseenTest > 0) {
+                                this.settings.addMessage({
+                                    message: `Class balance dropped ${balanced.droppedUnseenTest} test row(s) with labels not seen during training.`,
+                                    type: 'warning',
+                                });
+                            }
+                            console.info(formatClassBalanceReport(balancePlan));
+                        } else {
+                            this.settings.addMessage({
+                                message: balancePlan.log?.[0] || 'Class balancing skipped for this target.',
+                                type: 'info',
+                            });
+                        }
+                    }
+                }
 
                 let uniqueLabels = [...new Set(y_train.values)];
                 let labelEncoder, encoded_y, encoded_y_test;
@@ -942,6 +1023,8 @@ export default {
     },
     mounted() {
         this.refreshHpcStatus();
+        this.classBalanceEnabled = this.settings.classBalanceEnabled !== false;
+        this.classBalanceStrategy = this.settings.classBalanceStrategy || 'auto';
     },
     created: function () {
         this.Toast = useToast()

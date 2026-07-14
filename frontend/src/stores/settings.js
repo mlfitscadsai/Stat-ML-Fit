@@ -12,6 +12,9 @@ export const settingStore = defineStore('app', {
         features: [],
         transformations: [],
         classTransformations: [],
+        classBalanceEnabled: true,
+        classBalanceStrategy: 'auto',
+        classBalanceReport: null,
         results: [],
         trainingRuns: [],
         hpcJobs: [],
@@ -99,6 +102,18 @@ export const settingStore = defineStore('app', {
         },
         resetClassTransformations() {
             this.classTransformations = []
+        },
+        replaceClassTransformations(transformations) {
+            this.classTransformations = Array.isArray(transformations) ? transformations : []
+        },
+        setClassBalanceEnabled(enabled) {
+            this.classBalanceEnabled = Boolean(enabled)
+        },
+        setClassBalanceStrategy(strategy) {
+            this.classBalanceStrategy = strategy || 'auto'
+        },
+        setClassBalanceReport(report) {
+            this.classBalanceReport = report
         },
         resetTransformations() {
             this.transformations = []
